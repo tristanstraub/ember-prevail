@@ -43,5 +43,3 @@ App.MainController = Ember.Controller.extend();
 App.MainView = Ember.View.extend({
     templateName: 'main'
 });
-
-
