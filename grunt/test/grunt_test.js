@@ -5,7 +5,7 @@
     // namespace for models, so that Type.toString() returns a qualified name.
     Test = Ember.Namespace.create();
 
-    QUnit.config.testTimeout = 1000;
+    QUnit.config.testTimeout = 2000;
     /*
       ======== A Handy Little QUnit Reference ========
       http://docs.jquery.com/QUnit
