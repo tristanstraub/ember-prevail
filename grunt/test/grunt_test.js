@@ -5,7 +5,7 @@
     // namespace for models, so that Type.toString() returns a qualified name.
     Test = Ember.Namespace.create();
 
-    QUnit.config.testTimeout = 2000;
+    QUnit.config.testTimeout = 500;
     /*
       ======== A Handy Little QUnit Reference ========
       http://docs.jquery.com/QUnit
@@ -40,6 +40,31 @@
     });
 
     var log = function() { console.log.apply(console, arguments); };
+
+    test('ensure playedback', 0, function() {
+	var store = this.store;
+
+	stop();
+	this.store.ensurePlayedback().then(start);
+    });
+
+    test('ensure playedback after creating a record', 1, function() {
+	var store = this.store;
+	Test.Item = Ember.Prevail.Model.extend({});
+	store.registerTypes([Test.Item]);
+
+	stop();
+	this.store.ensurePlayedback()
+	    .then(function() { return store.createRecord(Test.Item, { name: "test" }); })
+	    .then(function() { return store.commit(); })
+	    .then(function() { return store.initialize(); })
+	    .then(function() { return store.ensurePlayedback(); })
+	    .then(function() { return store.findAll(Test.Item); })
+	    .then(function(items) {
+		strictEqual(items.length, 1, "has one item");
+	    })
+	    .then(start);
+    });
 
     test('getChangesets has no changesets', 1, function() {
 	var store = this.store;
@@ -287,4 +312,39 @@
 	    });
     });
 
+
+    test('create a record with child playsback parent and child"', 4, function() {
+	var store = this.store;
+	Test.Item = Ember.Prevail.Model.extend({
+	    name: Ember.Prevail.attr(),
+	    child: Ember.Prevail.attr()
+	});
+	store.registerTypes([Test.Item]);
+
+	stop();
+	var parentId;
+	store.createRecord(Test.Item, { name: "parent" })
+	    .then(function(parent) {
+		parentId = parent.get('id');
+		return parent;
+	    })
+	    .then(function(parent) {
+	    	return store.createRecord(Test.Item, { name: "child" })
+	    	    .then(function(child) { parent.set('child', child); });
+	    })
+	    .then(function() { return store.commit(); })
+	    .then(function() { return store.initialize(); })
+	    .then(function() { log(parentId); return store.find(parentId); })
+	    .then(function(parent) {
+		ok(parent, 'parent exists');
+		ok(parent.get('child'), 'child exists');
+		strictEqual(parent.get('name'), 'parent', 'parent has name');
+		strictEqual(parent.get('child.name'), 'child', 'child has name');
+	    })
+	    .then(start, function(e) {
+		log(e);
+		throw e;
+	    });
+    });
 }());
+
