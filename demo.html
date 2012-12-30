@@ -8,10 +8,12 @@
     </script>
 
     <script type="text/x-handlebars" data-template-name="main">
+      <a href="#" {{action clearStore }}>Clear store</a>
       <a href="#" {{action addItem }}>Add Item</a>
       <ul>
 	{{#each content}}
-	<li>{{view Ember.TextField valueBinding="name"}}
+	<li>{{this.id}} {{view Ember.TextField valueBinding="name"}}
+
 	[{{name}}]
 	{{#if isDirty}}
 	<a href="#" {{action saveItem this}}>Save</a>
