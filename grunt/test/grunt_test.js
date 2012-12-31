@@ -660,5 +660,141 @@
 	    });
     });
 
+    test('back reference 1 to 1', 5, function() {
+	var store = this.store;
+	var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
+	Test.Item = Ember.Prevail.Model.extend({
+	    name: Ember.Prevail.attr(),
+	    child: Ember.Prevail.attr({ backreference: 'parent'}),
+	    parent: Ember.Prevail.attr({ backreference: 'child'})
+	});
+	store.registerTypes([Test.Item]);
+
+	var parent;
+	var parentId, childId;
+
+	stop();
+	resolved
+	    .then(function() { return store.createRecord(Test.Item, { name: "apple" }); })
+	    .then(function(item) { 
+		parentId = item.get('id');
+		parent = item; 
+		return store.createRecord(Test.Item, { name: "orange" }); 
+	    })
+	    .then(function(child) { 
+		childId = child.get('id');
+		parent.set('child', child); 
+	    })
+	    .then(function(oranges) {
+	    	ok(parent.get('child').get('parent') == parent, 'backreference is set');
+	    })
+	    .then(function() { return store.commit(); })
+	    .then(function() { return store.initialize(); })
+	    .then(function() { return store.findAll(Test.Item); })
+	    .then(function(items) {
+		equal(items.length, 2, "all items");
+	    })
+	    .then(function() { return store.find(parentId); })
+	    .then(function(parent) {
+		equal(parent.get('id'), parentId, "parent id matches");
+		equal(parent.get('child.id'), childId, "child id matches");
+		equal(parent.get('child.parent.id'), parentId, "parent.child.parent id matches");
+	    })
+	    .then(start, function(e) {
+		log(e);
+		throw e;
+	    });
+    });
+
+    test('back reference n to 1', 5, function() {
+	var store = this.store;
+	var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
+	Test.Item = Ember.Prevail.Model.extend({
+	    children: Ember.Prevail.array({ backreference: 'parent' }),
+	    parent: Ember.Prevail.attr({ backreference: 'children' })
+	});
+	store.registerTypes([Test.Item]);
+
+	var parent;
+	var parentId, childId;
+
+	stop();
+	resolved
+	    .then(function() { return store.createRecord(Test.Item); })
+	    .then(function(item) { 
+		parentId = item.get('id');
+		parent = item; 
+		return store.createRecord(Test.Item); 
+	    })
+	    .then(function(child) { 
+		childId = child.get('id');
+		parent.get('children').pushObject(child);
+	    })
+	    .then(function(oranges) {
+	    	ok(parent.get('children').objectAt(0).get('parent') == parent, 'backreference is set');
+	    })
+	    .then(function() { return store.commit(); })
+	    .then(function() { return store.initialize(); })
+	    .then(function() { return store.findAll(Test.Item); })
+	    .then(function(items) {
+		equal(items.length, 2, "all items");
+	    })
+	    .then(function() { return store.find(parentId); })
+	    .then(function(parent) {
+		equal(parent.get('id'), parentId, "parent id matches");
+		equal(parent.get('children').objectAt(0).get('id'), childId, "child id matches");
+		equal(parent.get('children').objectAt(0).get('parent.id'), parentId, "parent.children[0].parent id matches");
+	    })
+	    .then(start, function(e) {
+		log(e);
+		throw e;
+	    });
+    });
+
+    test('back reference n to n', 5, function() {
+	var store = this.store;
+	var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
+	Test.Item = Ember.Prevail.Model.extend({
+	    children: Ember.Prevail.array({ backreference: 'parents' }),
+	    parents: Ember.Prevail.array({ backreference: 'children' })
+	});
+	store.registerTypes([Test.Item]);
+
+	var parent;
+	var parentId, childId;
+
+	stop();
+	resolved
+	    .then(function() { return store.createRecord(Test.Item); })
+	    .then(function(item) { 
+		parentId = item.get('id');
+		parent = item; 
+		return store.createRecord(Test.Item); 
+	    })
+	    .then(function(child) { 
+		childId = child.get('id');
+		parent.get('children').pushObject(child);
+	    })
+	    .then(function(oranges) {
+	    	ok(parent.get('children').objectAt(0).get('parents').objectAt(0) == parent, 'backreference is set');
+	    })
+	    .then(function() { return store.commit(); })
+	    .then(function() { return store.initialize(); })
+	    .then(function() { return store.findAll(Test.Item); })
+	    .then(function(items) {
+		equal(items.length, 2, "all items");
+	    })
+	    .then(function() { return store.find(parentId); })
+	    .then(function(parent) {
+		equal(parent.get('id'), parentId, "parent id matches");
+		equal(parent.get('children').objectAt(0).get('id'), childId, "child id matches");
+		equal(parent.get('children').objectAt(0).get('parents').objectAt(0).get('id'), parentId, "parent.children[0].parent id matches");
+	    })
+	    .then(start, function(e) {
+		log(e);
+		throw e;
+	    });
+    });
+
 }());
 
