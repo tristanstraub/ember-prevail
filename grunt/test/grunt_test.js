@@ -628,5 +628,37 @@
 		throw e;
 	    });
     });
+
+    test('create two records of different types, findAll of both types"', 2, function() {
+	var store = this.store;
+	var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
+	Test.Apple = Ember.Prevail.Model.extend({
+	    name: Ember.Prevail.attr(),
+	});
+	Test.Orange = Ember.Prevail.Model.extend({
+	    name: Ember.Prevail.attr(),
+	});
+	store.registerTypes([Test.Apple, Test.Orange]);
+
+	stop();
+	resolved
+	    .then(function() { return store.createRecord(Test.Apple, { name: "apple" }); })
+	    .then(function() { return store.createRecord(Test.Orange, { name: "orange" }); })
+	    .then(function() { return store.commit(); })
+	    .then(function() { return store.initialize(); })
+	    .then(function() { return store.findAll(Test.Apple); })
+	    .then(function(apples) {
+	    	strictEqual(apples.length, 1, 'one apple');
+	    })
+	    .then(function() { return store.findAll(Test.Orange); })
+	    .then(function(oranges) {
+	    	strictEqual(oranges.length, 1, 'one orange');
+	    })
+	    .then(start, function(e) {
+		log(e);
+		throw e;
+	    });
+    });
+
 }());
 
