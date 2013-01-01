@@ -920,16 +920,16 @@
 	    });
     });
 
-    test('back reference n to 1 with overwrite', 0, function() {
+    test('back reference n to 1 with overwrite', 5, function() {
 	var store = this.store;
 	var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
 	Test.Item = Ember.Prevail.Model.extend({
-	    child: Ember.Prevail.attr({ backreference: 'parent' }),
-	    parent: Ember.Prevail.attr({ backreference: 'child' })
+	    child: Ember.Prevail.attr({ backreference: 'parents' }),
+	    parents: Ember.Prevail.array({ backreference: 'child' })
 	});
 	store.registerTypes([Test.Item]);
 
-	var parent;
+	var parent, child2;
 	var parentId, childId;
 
 	stop();
@@ -943,56 +943,21 @@
 	    .then(function(child) { 
 		childId = child.get('id');
 		parent.set('child', child);
+		return store.createRecord(Test.Item);
+	    })
+	    .then(function(item) {
+		child2 = item;
 	    })
 	    .then(function() {
-	    	ok(parent.get('child.parent') == parent, 'backreference is set');
-	    })
-	    .then(function() {
-		var child = parent.get('child');
-		equal(parent, child.get('parent'), "correct parent");
-		ok(child.get('parent'), "has parent");
-		parent.set('child', null);
-		ok(!child.get('parent'), "no parent");
-	    })
-	    .then(start, function(e) {
-		log(e);
-		throw e;
-	    });
-    });
-
-    test('back reference 1 to n with overwrite', 0, function() {
-	var store = this.store;
-	var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
-	Test.Item = Ember.Prevail.Model.extend({
-	    child: Ember.Prevail.attr({ backreference: 'parent' }),
-	    parent: Ember.Prevail.attr({ backreference: 'child' })
-	});
-	store.registerTypes([Test.Item]);
-
-	var parent;
-	var parentId, childId;
-
-	stop();
-	resolved
-	    .then(function() { return store.createRecord(Test.Item); })
-	    .then(function(item) { 
-		parentId = item.get('id');
-		parent = item; 
-		return store.createRecord(Test.Item); 
-	    })
-	    .then(function(child) { 
-		childId = child.get('id');
-		parent.set('child', child);
-	    })
-	    .then(function() {
-	    	ok(parent.get('child.parent') == parent, 'backreference is set');
+	    	ok(parent.get('child.parents.firstObject') == parent, 'backreference is set');
 	    })
 	    .then(function() {
 		var child = parent.get('child');
-		equal(parent, child.get('parent'), "correct parent");
-		ok(child.get('parent'), "has parent");
-		parent.set('child', null);
-		ok(!child.get('parent'), "no parent");
+		equal(parent, child.get('parents.firstObject'), "correct child parent");
+		ok(!child2.get('parent'), "no child2 parent");
+		parent.set('child', child2);
+		ok(!child.get('parent'), "no child parent");
+		equal(parent, child2.get('parents.firstObject'), "correct child2 parent");
 	    })
 	    .then(start, function(e) {
 		log(e);
