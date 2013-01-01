@@ -1,3 +1,3 @@
 all:
-	grunt --config build/ember-prevail/grunt.js
+	grunt --verbose --config build/ember-prevail/grunt.js
 
