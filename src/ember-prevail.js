@@ -299,8 +299,15 @@
             }, this);
         },
 
+        committing: resolved,
+
         commit: function() {
-            return this.flushChanges();
+            var store = this;
+            var committing = get(this, 'committing').then(function () {
+                return store.flushChanges();
+            });
+            set(this, 'committing', committing);
+            return committing;
         },
 
         createRecord: function(type, hash, id) {
