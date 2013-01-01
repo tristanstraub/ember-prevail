@@ -11,6 +11,13 @@ module.exports = function(grunt) {
              '<%=grunt.template.today("dddd, mmmm dS, yyyy, h:MM:ss TT")%> */',
     },
 
+    concat: {
+	dist: {
+	    src: ['<banner:meta.banner>', '../../src/ember-promise.js', '../../src/<%= pkg.name %>.js', '../../lib/rsvp.js'],
+	    dest: '../../dist/<%= pkg.name %>.js'
+	}
+    },
+
     qunit: {
 	files: ['../../tests/**/*.html']
     },
@@ -27,5 +34,5 @@ module.exports = function(grunt) {
   });
 
     // Default task only builds your source files
-    grunt.registerTask('default', 'lint qunit');
+    grunt.registerTask('default', 'lint qunit concat');
 };
