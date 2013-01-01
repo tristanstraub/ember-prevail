@@ -400,7 +400,7 @@
 	var store = this.store;
 	var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
 	Test.Item = Ember.Prevail.Model.extend({
-	    children: Ember.Prevail.array()
+	    children: Ember.Prevail.collection()
 	});
 	store.registerTypes([Test.Item]);
 
@@ -422,7 +422,7 @@
 	var store = this.store;
 	var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
 	Test.Item = Ember.Prevail.Model.extend({
-	    children: Ember.Prevail.array()
+	    children: Ember.Prevail.collection()
 	});
 	store.registerTypes([Test.Item]);
 
@@ -447,7 +447,7 @@
 	var store = this.store;
 	var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
 	Test.Item = Ember.Prevail.Model.extend({
-	    children: Ember.Prevail.array()
+	    children: Ember.Prevail.collection()
 	});
 	store.registerTypes([Test.Item]);
 
@@ -473,7 +473,7 @@
 	var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
 	Test.Item = Ember.Prevail.Model.extend({
 	    name: Ember.Prevail.attr(),
-	    children: Ember.Prevail.array()
+	    children: Ember.Prevail.collection()
 	});
 	store.registerTypes([Test.Item]);
 
@@ -504,7 +504,7 @@
 	var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
 	Test.Item = Ember.Prevail.Model.extend({
 	    name: Ember.Prevail.attr(),
-	    children: Ember.Prevail.array()
+	    children: Ember.Prevail.collection()
 	});
 	store.registerTypes([Test.Item]);
 
@@ -564,7 +564,7 @@
 	var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
 	Test.Item = Ember.Prevail.Model.extend({
 	    name: Ember.Prevail.attr(),
-	    children: Ember.Prevail.array()
+	    children: Ember.Prevail.collection()
 	});
 	store.registerTypes([Test.Item]);
 
@@ -599,7 +599,7 @@
 	var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
 	Test.Item = Ember.Prevail.Model.extend({
 	    name: Ember.Prevail.attr(),
-	    children: Ember.Prevail.array()
+	    children: Ember.Prevail.collection()
 	});
 	store.registerTypes([Test.Item]);
 
@@ -709,7 +709,7 @@
 	var store = this.store;
 	var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
 	Test.Item = Ember.Prevail.Model.extend({
-	    children: Ember.Prevail.array({ backreference: 'parent' }),
+	    children: Ember.Prevail.collection({ backreference: 'parent' }),
 	    parent: Ember.Prevail.attr({ backreference: 'children' })
 	});
 	store.registerTypes([Test.Item]);
@@ -754,8 +754,8 @@
 	var store = this.store;
 	var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
 	Test.Item = Ember.Prevail.Model.extend({
-	    children: Ember.Prevail.array({ backreference: 'parents' }),
-	    parents: Ember.Prevail.array({ backreference: 'children' })
+	    children: Ember.Prevail.collection({ backreference: 'parents' }),
+	    parents: Ember.Prevail.collection({ backreference: 'children' })
 	});
 	store.registerTypes([Test.Item]);
 
@@ -799,8 +799,8 @@
 	var store = this.store;
 	var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
 	Test.Item = Ember.Prevail.Model.extend({
-	    children: Ember.Prevail.array({ backreference: 'parents' }),
-	    parents: Ember.Prevail.array({ backreference: 'children' })
+	    children: Ember.Prevail.collection({ backreference: 'parents' }),
+	    parents: Ember.Prevail.collection({ backreference: 'children' })
 	});
 	store.registerTypes([Test.Item]);
 
@@ -925,7 +925,7 @@
 	var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
 	Test.Item = Ember.Prevail.Model.extend({
 	    child: Ember.Prevail.attr({ backreference: 'parents' }),
-	    parents: Ember.Prevail.array({ backreference: 'child' })
+	    parents: Ember.Prevail.collection({ backreference: 'child' })
 	});
 	store.registerTypes([Test.Item]);
 
@@ -969,7 +969,7 @@
 	var store = this.store;
 	var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
 	Test.Item = Ember.Prevail.Model.extend({
-	    children: Ember.Prevail.array({ backreference: 'parent' }),
+	    children: Ember.Prevail.collection({ backreference: 'parent' }),
 	    parent: Ember.Prevail.attr({ backreference: 'children' })
 	});
 	store.registerTypes([Test.Item]);
@@ -1009,7 +1009,7 @@
 	var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
 	Test.Item = Ember.Prevail.Model.extend({
 	    child: Ember.Prevail.attr({ backreference: 'parents' }),
-	    parents: Ember.Prevail.array({ backreference: 'child' })
+	    parents: Ember.Prevail.collection({ backreference: 'child' })
 	});
 	store.registerTypes([Test.Item]);
 
