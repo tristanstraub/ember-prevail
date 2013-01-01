@@ -9,36 +9,47 @@ var App = Ember.Application.create({
 	    index: Ember.Route.extend({
 		route: '/',
 		connectOutlets: function(router) {
-		    router.get('applicationController').connectOutlet('content', 'main', App.store.find(App.Item));
+		    router.get('applicationController').connectOutlet('content', 'main', Ember.Prevail.toCollection(App.store.findAll(App.Item)));
 		},
 
 		addItem: function(router, event) {
-		    App.store.createRecord(App.Item, { name: '(unnamed)' });
-		    App.store.commit();
+		    App.store.createRecord(App.Item, { name: '(unnamed)' })
+			.then(function() { 
+			    return App.store.commit(); 
+			});
 		},
 
 		saveItem: function(router, event) {
-		    App.store.commit();
+		    return App.store.commit();
 		},
 
 		deleteItem: function(router, event) {
 		    var item = event.context;
-		    App.store.deleteRecord(item);
-		    App.store.commit();
-		}		
+		    App.store.deleteRecord(item)
+			.then(function() {
+			    return App.store.commit();
+			});
+		},
+
+		clearStore: function(router, event) {
+		    return App.store.clear();
+		}
 	    })
 	})
     })
 });
 
-App.Item = DS.Model.extend({
-    name: DS.attr('string')
+App.Item = Ember.Prevail.Model.extend({
+    name: Ember.Prevail.attr('string'),
+    didPropertyChange: function() {
+	return this.get('store').commit();
+    }.observes('name')
 });
 
-App.store = DS.Store.create({
-    revision: 10,
-    adapter: DS.LawnchairAdapter.create()
+App.store = Ember.Prevail.Store.create({
+    adapter: Ember.Prevail.LawnchairAdapter
 });
+App.store.registerTypes([App.Item]);
 
 App.ApplicationController = Ember.Controller.extend();
 App.ApplicationView = Ember.View.extend({
@@ -63,10 +74,13 @@ App.MainView = Ember.View.extend({
     </script>
 
     <script type="text/x-handlebars" data-template-name="main">
+      <a href="#" {{action clearStore }}>Clear store</a>
       <a href="#" {{action addItem }}>Add Item</a>
       <ul>
 	{{#each content}}
-	<li>{{view Ember.TextField valueBinding="name"}}
+	<li>{{this.id}} {{view Ember.TextField valueBinding="name"}}
+
+	[{{name}}]
 	{{#if isDirty}}
 	<a href="#" {{action saveItem this}}>Save</a>
 	{{/if}}
@@ -76,14 +90,12 @@ App.MainView = Ember.View.extend({
       </ul>
     </script>
 
-    <script type="text/javascript" src="lib/vendor/jquery-1.8.3.min.js"></script>
-    <script type="text/javascript" src="lib/vendor/handlebars-1.0.rc.1.js"></script>
-    <script type="text/javascript" src="lib/vendor/ember.js"></script>
-    <script type="text/javascript" src="lib/vendor/ember-data.js"></script>
-    <script type="text/javascript" src="lib/vendor/lawnchair.js"></script>
-    <script type="text/javascript" src="lib/vendor/lawnchair-adapter-indexed-db-0.6.1.js"></script>
-    <script type="text/javascript" src="lib/vendor/uuid.js"></script>
-    <script type="text/javascript" src="lib/ember-data-lawnchair.js"></script>
+    <script type="text/javascript" src="lib/jquery-1.8.3.min.js"></script>
+    <script type="text/javascript" src="lib/handlebars-1.0.rc.1.js"></script>
+    <script type="text/javascript" src="lib/ember.js"></script>
+    <script type="text/javascript" src="lib/lawnchair.js"></script>
+    <script type="text/javascript" src="lib/lawnchair-adapter-indexed-db-0.6.1.js"></script>
+    <script type="text/javascript" src="dist/ember-prevail.js"></script>
     <script type="text/javascript" src="demo.js"></script>
   </head>
   <body>
