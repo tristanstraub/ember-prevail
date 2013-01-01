@@ -170,7 +170,7 @@
     Prevail.attr = function(options) {
         var meta = {
             isAttribute: true,
-            isArray: false,
+            isCollection: false,
             options: options || {},
             enableBackreferences: true
         };
@@ -187,7 +187,7 @@
     Prevail.collection = function(options) {
         var meta = {
             isAttribute: true,
-            isArray: true,
+            isCollection: true,
             options: options || {},
             enableBackreferences: true
         };      
@@ -459,7 +459,7 @@
             Ember.assert("Has been played back", data.played);
 
             var metaParent = ob.constructor.metaForProperty(key);
-            Ember.assert("Cannot set collection of model", !metaParent.isArray);
+            Ember.assert("Cannot set collection of model", !metaParent.isCollection);
 
             if (value) {
                 this.addBackreference(ob, key, value);
@@ -502,7 +502,7 @@
                 var childAttribute = metaParent.options.backreference;
 
                 if (valueIsId) {
-                    if (metaParent.isArray) {
+                    if (metaParent.isCollection) {
                         value.addForeignCollection(ob, key);
                     } else {
                         value.addForeignReference(ob, key);
@@ -513,7 +513,7 @@
                     if (valueIsId && childAttribute) {
                         var metaChild = value.constructor.metaForProperty(childAttribute);
                         metaParent.enableBackreferences = false;
-                        if (metaChild.isArray) {
+                        if (metaChild.isCollection) {
                             value.get(childAttribute).addObject(ob);
                         } else {
                             value.set(childAttribute, ob);
@@ -532,7 +532,7 @@
                 var childAttribute = metaParent.options.backreference;
 
                 if (valueIsId) {
-                    if (metaParent.isArray) {
+                    if (metaParent.isCollection) {
                         value.removeForeignCollection(ob, key);
                     } else {
                         value.removeForeignReference(ob, key);
@@ -543,7 +543,7 @@
                     if (valueIsId && childAttribute) {
                         var metaChild = value.constructor.metaForProperty(childAttribute);
                         metaParent.enableBackreferences = false;
-                        if (metaChild.isArray) {
+                        if (metaChild.isCollection) {
                             ob.removeForeignCollection(value, childAttribute);
                             value.get(childAttribute).removeObject(ob);
                         } else {
