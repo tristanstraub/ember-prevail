@@ -10,24 +10,24 @@ var App = Ember.Application.create({
 		addItem: function(router, event) {
 		    App.store.createRecord(App.Item, { name: '(unnamed)' })
 			.then(function() { 
-			    App.store.commit(); 
+			    return App.store.commit(); 
 			});
 		},
 
 		saveItem: function(router, event) {
-		    App.store.commit();
+		    return App.store.commit();
 		},
 
 		deleteItem: function(router, event) {
 		    var item = event.context;
 		    App.store.deleteRecord(item)
 			.then(function() {
-			    App.store.commit();
+			    return App.store.commit();
 			});
 		},
 
 		clearStore: function(router, event) {
-		    App.store.clear();
+		    return App.store.clear();
 		}
 	    })
 	})
@@ -37,7 +37,7 @@ var App = Ember.Application.create({
 App.Item = Ember.Prevail.Model.extend({
     name: Ember.Prevail.attr('string'),
     didPropertyChange: function() {
-	this.get('store').commit();
+	return this.get('store').commit();
     }.observes('name')
 });
 

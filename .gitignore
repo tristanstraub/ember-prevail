@@ -8,3 +8,4 @@ lib/vendor/.#ember.js
 lib/vendor/ember.js~
 lib/vendor/lawnchair-adapter-indexed-db-0.6.1.js~
 lib/vendor/lawnchair.js~
+dist/ember-prevail.js

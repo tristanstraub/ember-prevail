@@ -13,7 +13,7 @@ module.exports = function(grunt) {
 
     concat: {
 	dist: {
-	    src: ['<banner:meta.banner>', '../../src/ember-promise.js', '../../src/<%= pkg.name %>.js', '../../lib/rsvp.js'],
+	    src: ['<banner:meta.banner>', '../../lib/uuid.js', '../../lib/rsvp.js', '../../src/ember-promise.js', '../../src/<%= pkg.name %>.js'],
 	    dest: '../../dist/<%= pkg.name %>.js'
 	}
     },
