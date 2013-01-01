@@ -1074,7 +1074,7 @@
 
                 // child and parent are defined
                 ok(child.get('parent'), "has parent");
-                ok(parent.get('child'), "has child")
+                ok(parent.get('child'), "has child");
                 
                 // bidirectional relationship
                 equal(parent, child.get('parent'), "correct parent");
@@ -1084,7 +1084,7 @@
             })
             .then(function() {
                 ok(!child.get('parent'), "has no parent");
-                ok(!parent.get('child'), "has no child")
+                ok(!parent.get('child'), "has no child");
             })
             .then(start, function(e) {
                 log(e);
@@ -1122,20 +1122,20 @@
 
                 // child and parent are defined
                 ok(child.get('parents.firstObject'), "has parent");
-                ok(parent.get('children.firstObject'), "has child")
+                ok(parent.get('children.firstObject'), "has child");
                 
                 // bidirectional relationship
                 equal(parent, child.get('parents.firstObject'), "correct parent");
                 equal(parent.get('children.firstObject'), child, "correct child");
 
                 equal(child.get('parents.length'), 1, "has no parents");
-                equal(parent.get('children.length'), 1, "has no children")
+                equal(parent.get('children.length'), 1, "has no children");
 
                 return store.deleteRecord(child);
             })
             .then(function() {
                 equal(child.get('parents.length'), 0, "has no parents");
-                equal(parent.get('children.length'), 0, "has no children")
+                equal(parent.get('children.length'), 0, "has no children");
             })
             .then(start, function(e) {
                 log(e);
