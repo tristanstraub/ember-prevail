@@ -38,6 +38,7 @@
     });
 
     var log = function() { console.log.apply(console, arguments); };
+    var get = Ember.get;
 
     var resolved = Ember.Prevail.resolved;
 
@@ -224,7 +225,7 @@
             .then(function() { return store.findAll(Test.Item); })
             .then(function(items) {
                 strictEqual(items.length, 1, "1 played back item");
-                strictEqual(items.get('firstObject').get('name'), "test", "'test' as name");
+                strictEqual(get(items, 'firstObject').get('name'), "test", "'test' as name");
             })
             .then(start, function(e) {
                 log(e);
@@ -245,7 +246,7 @@
             .then(function() { return store.commit(); })
             .then(function() { return store.initialize(); })
             .then(function() { return store.findAll(Test.Item); })
-            .then(function(items) { items.get('firstObject').set('name', "(unnamed)q"); })
+            .then(function(items) { get(items, 'firstObject').set('name', "(unnamed)q"); })
             .then(function() { return store.commit(); })
             .then(function() { return store.initialize(); })
             .then(function(ob) { return store.get('adapter').getChangeSets();
@@ -272,13 +273,13 @@
             .then(function() { return store.commit(); })
             .then(function() { return store.initialize(); })
             .then(function() { return store.findAll(Test.Item); })
-            .then(function(items) { items.get('firstObject').set('name', "(unnamed)q"); })
+            .then(function(items) { get(items, 'firstObject').set('name', "(unnamed)q"); })
             .then(function() { return store.commit(); })
             .then(function() { return store.initialize(); })
             .then(function() { return store.findAll(Test.Item); })
             .then(function(items) {
                 strictEqual(items.length, 1, "1 played back item");
-                strictEqual(items.get('firstObject').get('name'), "(unnamed)q", "'(unnamed)q' as name");
+                strictEqual(get(items, 'firstObject').get('name'), "(unnamed)q", "'(unnamed)q' as name");
             })
             .then(start, function(e) {
                 log(e);
@@ -296,7 +297,7 @@
         this.store.createRecord(Test.Item, { name: "test" })
             .then(function() { return store.commit(); })
             .then(function() { return store.findAll(Test.Item); })
-            .then(function(items) { return store.deleteRecord(items.get('firstObject')); })
+            .then(function(items) { return store.deleteRecord(get(items, 'firstObject')); })
             .then(function() { return store.commit(); })
             .then(start, function(e) {
                 log(e);
@@ -314,7 +315,7 @@
         this.store.createRecord(Test.Item, { name: "test" })
             .then(function() { return store.commit(); })
             .then(function() { return store.findAll(Test.Item); })
-            .then(function(items) { return store.deleteRecord(items.get('firstObject')); })
+            .then(function(items) { return store.deleteRecord(get(items, 'firstObject')); })
             .then(function() { return store.commit(); })
             .then(function() { return store.findAll(Test.Item); })
             .then(function(items) {
@@ -339,16 +340,16 @@
             .then(function() { return store.commit(); })
             .then(function() { return store.initialize(); })
             .then(function() { return store.findAll(Test.Item); })
-            .then(function(items) { items.get('firstObject').set('name', "(unnamed)q"); })
+            .then(function(items) { get(items, 'firstObject').set('name', "(unnamed)q"); })
             .then(function() { return store.commit(); })
             .then(function() { return store.initialize(); })
             .then(function() { return store.findAll(Test.Item); })
             .then(function(items) {
                 strictEqual(items.length, 1, "1 played back item");
-                strictEqual(items.get('firstObject').get('name'), "(unnamed)q", "'(unnamed)q' as name");
+                strictEqual(get(items, 'firstObject').get('name'), "(unnamed)q", "'(unnamed)q' as name");
             })
             .then(function() { return store.findAll(Test.Item); })
-            .then(function(items) { return store.deleteRecord(items.get('firstObject')); })
+            .then(function(items) { return store.deleteRecord(get(items, 'firstObject')); })
             .then(function() { return store.commit(); })
             .then(function() { return store.findAll(Test.Item); })
             .then(function(items) {
@@ -1042,6 +1043,56 @@
                 throw e;
             });
     });
+
+    test('back reference 1 to 1 with deletion', 7, function() {
+        var store = this.store;
+        var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
+        Test.Item = Ember.Prevail.Model.extend({
+            child: Ember.Prevail.attr({ backreference: 'parent' }),
+            parent: Ember.Prevail.attr({ backreference: 'child' })
+        });
+        store.registerTypes([Test.Item]);
+
+        var parent, child;
+
+        stop();
+        resolved
+            .then(function() { return store.createRecord(Test.Item); })
+            .then(function(item) { 
+                parent = item; 
+                return store.createRecord(Test.Item); 
+            })
+            .then(function(item) { 
+                child = item;
+                parent.set('child', child);
+            })
+            .then(function() {
+                ok(parent.get('child.parent') === parent, 'backreference is set');
+            })
+            .then(function() {
+                child = parent.get('child');
+
+                // child and parent are defined
+                ok(child.get('parent'), "has parent");
+                ok(parent.get('child'), "has child")
+                
+                // bidirectional relationship
+                equal(parent, child.get('parent'), "correct parent");
+                equal(parent.get('child'), child, "correct child");
+
+                return store.deleteRecord(child);
+            })
+            .then(function() {
+                ok(!child.get('parent'), "has no parent");
+                ok(!parent.get('child'), "has no child")
+            })
+            .then(start, function(e) {
+                log(e);
+                throw e;
+            });
+    });
+
+    // test('find works with type', 0, function() {});
 
 }());
 

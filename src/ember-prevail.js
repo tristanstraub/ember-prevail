@@ -51,7 +51,7 @@
         });
         var output = Ember.A();
 
-	var addCollection = function(collection) {
+        var addCollection = function(collection) {
             return collection.objectAt(i);
         };
 
@@ -129,6 +129,7 @@
 
     Prevail.attr = function(options) {
         var meta = {
+            isAttribute: true,
             isArray: false,
             options: options || {},
             enableBackreferences: true
@@ -145,6 +146,7 @@
 
     Prevail.collection = function(options) {
         var meta = {
+            isAttribute: true,
             isArray: true,
             options: options || {},
             enableBackreferences: true
@@ -171,15 +173,62 @@
     };
 
     Prevail.Model = Ember.Object.extend({
+        _foreign_references_: null,
+        _foreign_collections_: null,
+
+        init: function() {
+            this.set('_foreign_references_', Ember.Set.create());
+            this.set('_foreign_collections_', Ember.Set.create());
+        },
+
+        eachForeign: function(fn, collection) {
+            collection.forEach(function(parent_key) {
+                try {
+                var leftIndex = parent_key.indexOf('_');
+                var parent = parent_key.slice(0, leftIndex);
+                var key = parent_key.slice(leftIndex + 1, parent_key.length);
+                fn.call(this, parent, key);
+                } catch(e) { log(e); throw e; }
+            });
+        },
+
+        eachForeignReference: function(fn) {
+            this.eachForeign(fn, this.get('_foreign_references_'));
+        },
+
+        eachForeignCollection: function(fn) {
+            this.eachForeign(fn, this.get('_foreign_collections_'));
+        },
+
+        addForeignReference: function(parent, key) {
+            log('add fref: %@ %@'.fmt(parent.get('id'), key));
+            var refs = this.get('_foreign_references_');
+            refs.addObject(parent.get('id') + "_" + key);
+        },
+
+        addForeignCollection: function(parent, key) {
+            log('add fcol: %@ %@'.fmt(parent.get('id'), key));
+            var refs = this.get('_foreign_collections_');
+            refs.addObject(parent.get('id') + "_" + key);
+        },
+
+        removeForeignReference: function(parent, key) {
+            var refs = this.get('_foreign_references_');
+            refs.removeObject(parent.get('id') + "_" + key);
+        },
+
+        removeForeignCollection: function(parent, key) {
+            var refs = this.get('_foreign_collections_');
+            refs.removeObject(parent.get('id') + "_" + key);
+        },
+
         propertySet: function(key, value, oldvalue) {
             var store = this.get('store');
-
             store.propertySet(this, key, value, oldvalue);
         },
 
         enumerableWillChange: function(key, collection, removed, added) {
             var store = this.get('store');
-
             store.enumerableWillChange(this, key, collection, removed, added);
         },
 
@@ -250,25 +299,54 @@
         deleteRecord: function(ob) {
             var store = this;
             return this.ensurePlayedback().then(function() {
-                var change = {
-                    // change header
-                    id: Prevail.newId(),
-                    changeType: 'delete',
-                    objectType: ob.constructor.toString(),
-                    // change payload
-                    objectId: ob.get('id')
-                };
+                var promise = Ember.Prevail.resolved;
+
+                ob.eachForeignReference(function(parentId, key) {
+                    promise = promise
+                        .then(function() {
+                            return store.find(parentId);
+                        })
+                        .then(function(parent) {
+                            Ember.assert("foreign reference is same object", parent.get(key) === ob);
+                            parent.set(key, null);
+                        })
+                        .then(null, Ember.Prevail.Error);
+                });
+
+                ob.eachForeignCollection(function(parentId, key) {
+                    promise = promise
+                        .then(function() {
+                            return store.find(parentId);
+                        })
+                        .then(function(parent) {
+                            log(parent);
+                            log(key);
+                            log(parent.get(key));
+                            parent.get(key).removeObject(ob);
+                        });
+                });
 
                 if (store.get('remember')) {
+                    var change = {
+                        // change header
+                        id: Prevail.newId(),
+                        changeType: 'delete',
+                        objectType: ob.constructor.toString(),
+                        // change payload
+                        objectId: ob.get('id')
+                    };
+
                     store.rememberChange(change);
                 }
 
                 store.forgetObject(ob);
+                
+                return promise;
             });
         },
 
-        find: function(id) {
-            return this.getObject(id);
+        find: function(type, id) {
+            return this.getObject.apply(this, arguments);
         },
 
         findAll: function(type) {
@@ -277,14 +355,14 @@
             var obs = findAllCache[type.toString()];
 
             if (!obs) {
-                obs = findAllCache[type.toString()] = Ember.A();
+                obs = findAllCache[type.toString()] = Ember.Set.create();
             }
 
             return this.get('all').then(function(values) {
                 obs.clear();
                 values.forEach(function(value) {
                     if (type.detectInstance(value)) {
-                        obs.pushObject(value);
+                        obs.addObject(value);
                     }
                 });
 
@@ -350,6 +428,11 @@
         },
 
         propertySet: function(ob, key, value, oldvalue) {
+            var data = this.get('data');
+
+            // assume <ensurePlayedback>, because ob exists from createRecord, or being loaded
+            Ember.assert("Has been played back", data.played);
+
             var metaParent = ob.constructor.metaForProperty(key);
             Ember.assert("Cannot set collection of model", !metaParent.isArray);
 
@@ -363,8 +446,6 @@
 
             if (this.get('remember')) {
                 var valueIsId = Prevail.Model.detectInstance(value);
-
-                var data = this.get('data');
 
                 var change = {
                     // change header
@@ -387,6 +468,14 @@
             var metaParent = ob.constructor.metaForProperty(key);
             var childAttribute = metaParent.options.backreference;
 
+            if (valueIsId) {
+                if (metaParent.isArray) {
+                    value.addForeignCollection(ob, key);
+                } else {
+                    value.addForeignReference(ob, key);
+                }
+            }
+
             if (metaParent.enableBackreferences) {
                 if (valueIsId && childAttribute) {
                     var metaChild = value.constructor.metaForProperty(childAttribute);
@@ -407,13 +496,23 @@
             var metaParent = ob.constructor.metaForProperty(key);
             var childAttribute = metaParent.options.backreference;
 
+            if (valueIsId) {
+                if (metaParent.isArray) {
+                    value.removeForeignCollection(ob, key);
+                } else {
+                    value.removeForeignReference(ob, key);
+                }
+            }
+
             if (metaParent.enableBackreferences) {
                 if (valueIsId && childAttribute) {
                     var metaChild = value.constructor.metaForProperty(childAttribute);
                     metaParent.enableBackreferences = false;
                     if (metaChild.isArray) {
+                        ob.removeForeignCollection(value, childAttribute);
                         value.get(childAttribute).removeObject(ob);
                     } else {
+                        ob.removeForeignReference(value, childAttribute);
                         value.set(childAttribute, null);
                     }
                     metaParent.enableBackreferences = true;
@@ -425,6 +524,11 @@
         },
 
         enumerableDidChange: function(ob, key, collection, removed, added) {
+            var data = this.get('data');
+
+            // assume <ensurePlayedback>, because ob exists from createRecord, or being loaded
+            Ember.assert("Has been played back", data.played);
+
             // Prevail.logArguments(['ob','key','collection','removed','added'], arguments);
 
             // Set.clear   -> (removed == len,   added == 0)
@@ -444,8 +548,6 @@
             });
 
             if (this.get('remember') && (removed || added)) {
-                var data = this.get('data');
-
                 var detectModel = function(value) { return Prevail.Model.detectInstance(value); };
                 var extractId = function(value) { return detectModel(value) ? value.get('id') : value; };
 
@@ -660,25 +762,40 @@
 
             var findAllCache = data.queries.findAll[ob.constructor.toString()];
             if (findAllCache) {
-                findAllCache.pushObject(ob);
+                findAllCache.addObject(ob);
             }
 
             this.notifyPropertyChange('data');
         },
 
+        // TODO -- forgetObject can be replaced by _foreign_collections_
         forgetObject: function(ob) {
             var data = this.get('data');
             delete data.objects[ob.get('id')];
             
-            data.queries.findAll[ob.constructor.toString()].removeObject(ob);
+            var findAllCache = data.queries.findAll[ob.constructor.toString()];
+            if (findAllCache) {
+                findAllCache.removeObject(ob);
+            }
             
             this.notifyPropertyChange('data');
         },
 
-        getObject: function(id) {
+        getObject: function(type, id) {
+            if (arguments.length == 1) { id = type; type = null; }
             var store = this;
             return this.ensurePlayedback().then(function() {
-                return store.get('data').objects[id];
+                var ob = store.get('data').objects[id];
+                if (type) {
+                    if (type.detectInstance && type.detectInstance(ob)) {
+                        return ob;
+                    } else {
+                        throw "type can't detect instance";
+                    }
+                } else {
+                    return ob;
+                }
+                return null;
             });
         }
     });
