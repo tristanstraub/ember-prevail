@@ -13,6 +13,8 @@
     Ember.Prevail = Ember.Namespace.extend();
     var Prevail = Ember.Prevail;
 
+    Prevail.logChanges = false;
+
     Prevail.resolved = Ember.makePromise();
     Prevail.resolved.resolve();
 
@@ -478,62 +480,73 @@
             }
         },
 
+        dontRemember: function(fn) {
+            var remember = this.get('remember');
+            this.mustRememberChanges(false);
+            fn();
+            this.mustRememberChanges(remember);
+        },
+
         addBackreference: function(ob, key, value) {
-            var valueIsId = Prevail.Model.detectInstance(value);
-            
-            var metaParent = ob.constructor.metaForProperty(key);
-            var childAttribute = metaParent.options.backreference;
+            this.dontRemember(function() {
+                var valueIsId = Prevail.Model.detectInstance(value);
+                
+                var metaParent = ob.constructor.metaForProperty(key);
+                var childAttribute = metaParent.options.backreference;
 
-            if (valueIsId) {
-                if (metaParent.isArray) {
-                    value.addForeignCollection(ob, key);
-                } else {
-                    value.addForeignReference(ob, key);
-                }
-            }
-
-            if (metaParent.enableBackreferences) {
-                if (valueIsId && childAttribute) {
-                    var metaChild = value.constructor.metaForProperty(childAttribute);
-                    metaParent.enableBackreferences = false;
-                    if (metaChild.isArray) {
-                        value.get(childAttribute).addObject(ob);
+                if (valueIsId) {
+                    if (metaParent.isArray) {
+                        value.addForeignCollection(ob, key);
                     } else {
-                        value.set(childAttribute, ob);
+                        value.addForeignReference(ob, key);
                     }
-                    metaParent.enableBackreferences = true;
                 }
-            }
+
+                if (metaParent.enableBackreferences) {
+                    if (valueIsId && childAttribute) {
+                        var metaChild = value.constructor.metaForProperty(childAttribute);
+                        metaParent.enableBackreferences = false;
+                        if (metaChild.isArray) {
+                            value.get(childAttribute).addObject(ob);
+                        } else {
+                            value.set(childAttribute, ob);
+                        }
+                        metaParent.enableBackreferences = true;
+                    }
+                }
+            });
         },
 
         removeBackreference: function(ob, key, value) {
-            var valueIsId = Prevail.Model.detectInstance(value);
-            
-            var metaParent = ob.constructor.metaForProperty(key);
-            var childAttribute = metaParent.options.backreference;
+            this.dontRemember(function() {
+                var valueIsId = Prevail.Model.detectInstance(value);
+                
+                var metaParent = ob.constructor.metaForProperty(key);
+                var childAttribute = metaParent.options.backreference;
 
-            if (valueIsId) {
-                if (metaParent.isArray) {
-                    value.removeForeignCollection(ob, key);
-                } else {
-                    value.removeForeignReference(ob, key);
-                }
-            }
-
-            if (metaParent.enableBackreferences) {
-                if (valueIsId && childAttribute) {
-                    var metaChild = value.constructor.metaForProperty(childAttribute);
-                    metaParent.enableBackreferences = false;
-                    if (metaChild.isArray) {
-                        ob.removeForeignCollection(value, childAttribute);
-                        value.get(childAttribute).removeObject(ob);
+                if (valueIsId) {
+                    if (metaParent.isArray) {
+                        value.removeForeignCollection(ob, key);
                     } else {
-                        ob.removeForeignReference(value, childAttribute);
-                        value.set(childAttribute, null);
+                        value.removeForeignReference(ob, key);
                     }
-                    metaParent.enableBackreferences = true;
                 }
-            }
+
+                if (metaParent.enableBackreferences) {
+                    if (valueIsId && childAttribute) {
+                        var metaChild = value.constructor.metaForProperty(childAttribute);
+                        metaParent.enableBackreferences = false;
+                        if (metaChild.isArray) {
+                            ob.removeForeignCollection(value, childAttribute);
+                            value.get(childAttribute).removeObject(ob);
+                        } else {
+                            ob.removeForeignReference(value, childAttribute);
+                            value.set(childAttribute, null);
+                        }
+                        metaParent.enableBackreferences = true;
+                    }
+                }
+            });
         },
 
         enumerableWillChange: function(ob, key, collection, removed, added) {
@@ -585,6 +598,11 @@
         },
 
         playbackChange: function(change) {
+            if (Prevail.logChanges) {
+                log('playbackChange:');
+                log(change);
+            }
+
             var store = this;
             var type;
             
@@ -766,6 +784,11 @@
         },
 
         rememberChange: function(change) {
+            if (Prevail.logChanges) {
+                log('rememberChange:');
+                log(change);
+            }
+
             Ember.assert("can't remember change while remember is false", this.get('remember'));
             var data = this.get('data');
             data.changes.pushObject(change);
