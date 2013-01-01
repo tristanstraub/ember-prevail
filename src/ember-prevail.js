@@ -6,8 +6,7 @@
 // deletions must update related objects
 
 (function() {
-    var get = Ember.get;
-    var set = Ember.set;
+    var get = Ember.get, set = Ember.set;
 
     var log = function() { console.log.apply(console, arguments); };
 
@@ -80,6 +79,45 @@
         });
         return array;
     };
+
+    Prevail.FilteredSet = Ember.Set.extend({
+        match: null,
+
+        content: Ember.computed(function(key, value, oldvalue) {
+            try {
+                if (arguments.length > 1) {
+                    if (oldvalue) {
+                        oldvalue.removeEnumerableObserver(this);
+                    }
+
+                    value.addEnumerableObserver(this);
+
+                    var match = get(this, 'match') || function(){return true;};                    
+
+                    this.addObjects(value.filter(match));
+                }
+
+                return value;
+            } catch(e) { Ember.Prevail.Error(e); }
+        }),
+
+        enumerableWillChange: function(content, removed, added) {
+        },
+        
+        enumerableDidChange: function(content, removed, added) {
+            try {
+                var match = get(this, 'match') || function(){return true;};
+
+                if (removed) {
+                    this.removeObjects(removed.filter(match));
+                }
+
+                if (added) {
+                    this.addObjects(added.filter(match));
+                }
+            } catch(e) { Ember.Prevail.Error(e); }
+        }
+    });
 
     Prevail.LawnchairAdapter = Prevail.Adapter.extend({
         dbName: 'prevail',
@@ -269,6 +307,14 @@
                 hash = hash || {};
                 var ob = type.create({store: store, id: hash.id || id || Prevail.newId()});
 
+                store.rememberObject(ob);
+
+                // TODO -- remember should a stack
+                var remember = store.get('remember');
+                store.set('remember', false);
+                ob.setProperties(hash);
+                store.set('remember', remember);
+
                 if (store.get('remember')) {
                     var change = {
                         // change header
@@ -282,13 +328,6 @@
 
                     store.rememberChange(change);
                 }
-
-                store.rememberObject(ob);
-                
-                var remember = store.get('remember');
-                store.set('remember', false);
-                ob.setProperties(hash);
-                store.set('remember', remember);
 
                 return ob;
             });
@@ -310,20 +349,19 @@
                         })
                         .then(null, Ember.Prevail.Error);
                 });
-
+                
                 ob.eachForeignCollection(function(parentId, key) {
                     promise = promise
                         .then(function() {
                             return store.find(parentId);
                         })
                         .then(function(parent) {
-                            log(parent);
-                            log(key);
-                            log(parent.get(key));
-                            parent.get(key).removeObject(ob);
+                            return parent.get(key).removeObject(ob);
                         });
                 });
 
+                store.forgetObject(ob);
+                
                 if (store.get('remember')) {
                     var change = {
                         // change header
@@ -337,8 +375,6 @@
                     store.rememberChange(change);
                 }
 
-                store.forgetObject(ob);
-                
                 return promise;
             });
         },
@@ -349,26 +385,16 @@
 
         findAll: function(type) {
             var store = this;
-            var findAllCache = this.get('data').queries.findAll;
-            var obs = findAllCache[type.toString()];
-
-            if (!obs) {
-                obs = findAllCache[type.toString()] = Ember.Set.create();
-            }
-
-            return this.get('all').then(function(values) {
-                obs.clear();
-                values.forEach(function(value) {
-                    if (type.detectInstance(value)) {
-                        obs.addObject(value);
-                    }
+            var data = this.get('data');
+                
+            return this.ensurePlayedback().then(function() {
+                var coll = Prevail.FilteredSet.create({
+                    match: function(ob) { return type.detectInstance(ob); }
                 });
 
-                try {
-                    store.notifyPropertyChange('data');
-                } catch(e) { Prevail.Error(e); }
-
-                return obs;
+                set(coll, 'content', data.objects);
+                
+                return coll;
             });
         },
 
@@ -395,26 +421,17 @@
             });
         },
 
-        all: function() {
-            var data = this.get('data');
-            return this.ensurePlayedback().then(function() {
-                var obs = data.objects;
-                return Ember.keys(obs).map(function(key) { return obs[key]; });
-            });
-        }.property('data'),
-
         initialize: function() {
             return withPromise(function(promise) {
                 // destroy existing items when initialize called twice?
                 var data = {
                     played: false,
-                    objects: {},
+                    objects: Ember.Set.create(),
+                    objectsIndex: {},
                     changes: [],
-                    previousChangesetId: null,
-                    queries: {
-                        findAll: {}
-                    }
+                    previousChangesetId: null
                 };
+
                 this.beginPropertyChanges();
                 if (this.get('adapter').create) {
                     this.set('adapter', this.get('adapter').create());
@@ -629,7 +646,7 @@
             } else if (change.changeType === 'delete') {
                 return store.getObject(change.objectId)
                     .then(function(ob) {
-                        return store.forgetObject(ob);
+                        return store.deleteRecord(ob);
                     });
             } else {
                 throw new Exception("Unknown change type:" + change.changeType);
@@ -756,25 +773,16 @@
         
         rememberObject: function(ob) {
             var data = this.get('data');
-            data.objects[ob.get('id')] = ob;
-
-            var findAllCache = data.queries.findAll[ob.constructor.toString()];
-            if (findAllCache) {
-                findAllCache.addObject(ob);
-            }
+            data.objectsIndex[ob.get('id')] = ob;
+            data.objects.addObject(ob);
 
             this.notifyPropertyChange('data');
         },
 
-        // TODO -- forgetObject can be replaced by _foreign_collections_
         forgetObject: function(ob) {
             var data = this.get('data');
-            delete data.objects[ob.get('id')];
-            
-            var findAllCache = data.queries.findAll[ob.constructor.toString()];
-            if (findAllCache) {
-                findAllCache.removeObject(ob);
-            }
+            delete data.objectsIndex[ob.get('id')];
+            data.objects.removeObject(ob);
             
             this.notifyPropertyChange('data');
         },
@@ -783,7 +791,7 @@
             if (arguments.length == 1) { id = type; type = null; }
             var store = this;
             return this.ensurePlayedback().then(function() {
-                var ob = store.get('data').objects[id];
+                var ob = store.get('data').objectsIndex[id];
                 if (type) {
                     if (type.detectInstance && type.detectInstance(ob)) {
                         return ob;
