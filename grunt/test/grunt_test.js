@@ -833,5 +833,122 @@
 		throw e;
 	    });
     });
+
+    test('back reference 1 to 1 with removal', 3, function() {
+	var store = this.store;
+	var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
+	Test.Item = Ember.Prevail.Model.extend({
+	    child: Ember.Prevail.array({ backreference: 'parent' }),
+	    parent: Ember.Prevail.array({ backreference: 'child' })
+	});
+	store.registerTypes([Test.Item]);
+
+	var parent;
+	var parentId, childId;
+
+	stop();
+	resolved
+	    .then(function() { return store.createRecord(Test.Item); })
+	    .then(function(item) { 
+		parentId = item.get('id');
+		parent = item; 
+		return store.createRecord(Test.Item); 
+	    })
+	    .then(function(child) { 
+		childId = child.get('id');
+		parent.set('child', child);
+	    })
+	    .then(function() {
+	    	ok(parent.get('child').get('parent') == parent, 'backreference is set');
+	    })
+	    .then(function() {
+		var child = parent.get('child');
+		ok(child.get('parent'), "has parent");
+		parent.set('child', null);
+		ok(!child.get('parent'), "no parent");
+	    })
+	    .then(start, function(e) {
+		log(e);
+		throw e;
+	    });
+    });
+
+    test('back reference 1 to n with removal', 3, function() {
+	var store = this.store;
+	var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
+	Test.Item = Ember.Prevail.Model.extend({
+	    children: Ember.Prevail.array({ backreference: 'parent' }),
+	    parent: Ember.Prevail.array({ backreference: 'children' })
+	});
+	store.registerTypes([Test.Item]);
+
+	var parent;
+	var parentId, childId;
+
+	stop();
+	resolved
+	    .then(function() { return store.createRecord(Test.Item); })
+	    .then(function(item) { 
+		parentId = item.get('id');
+		parent = item; 
+		return store.createRecord(Test.Item); 
+	    })
+	    .then(function(child) { 
+		childId = child.get('id');
+		parent.get('children').addObject(child);
+	    })
+	    .then(function() {
+	    	ok(parent.get('child.parents.firstObject') == parent, 'backreference is set');
+	    })
+	    .then(function() {
+		var child = parent.get('children.firstObject');
+		equal(child.get('parents.length'), 1, "has parents");
+		parent.set('child', null);
+		equal(child.get('parents.length'), 0, "no parents");
+	    })
+	    .then(start, function(e) {
+		log(e);
+		throw e;
+	    });
+    });
+
+    test('back reference n to 1 with removal', 3, function() {
+	var store = this.store;
+	var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
+	Test.Item = Ember.Prevail.Model.extend({
+	    children: Ember.Prevail.array({ backreference: 'parent' }),
+	    parent: Ember.Prevail.attr({ backreference: 'children' })
+	});
+	store.registerTypes([Test.Item]);
+
+	var parent;
+	var parentId, childId;
+
+	stop();
+	resolved
+	    .then(function() { return store.createRecord(Test.Item); })
+	    .then(function(item) { 
+		parentId = item.get('id');
+		parent = item; 
+		return store.createRecord(Test.Item); 
+	    })
+	    .then(function(child) { 
+		childId = child.get('id');
+		parent.get('children').addObject(child);
+	    })
+	    .then(function() {
+	    	ok(parent.get('children.firstObject.parent') == parent, 'backreference is set');
+	    })
+	    .then(function() {
+		var child = parent.get('children.firstObject');
+		ok(child.get('parent'), "has parent");
+		parent.get('children').removeObject(child);
+		ok(child.get('parents'), "no parent");
+	    })
+	    .then(start, function(e) {
+		log(e);
+		throw e;
+	    });
+    });
 }());
 
