@@ -3,7 +3,7 @@
 /*global notDeepEqual:false, strictEqual:false, notStrictEqual:false, raises:false*/
 (function() {
     // namespace for models, so that Type.toString() returns a qualified name.
-    QUnit.config.testTimeout = 4000;
+    QUnit.config.testTimeout = 500;
 
     var resolved = Ember.Prevail.resolved;
 
@@ -40,7 +40,9 @@
     module('ember-prevail', {
         setup: function() {
             this.store = Ember.Prevail.Store.create({
-                adapter: Ember.Prevail.LawnchairAdapter
+                adapter: Ember.Prevail.LawnchairAdapter.extend({
+                    dbName: 'test'
+                })
             });
 
             stop();
@@ -90,6 +92,27 @@
             .then(function() { return store.findAll(Test.Item); })
             .then(function(items) {
                 strictEqual(items.length, 1, "has one item");
+            })
+            .then(complete(store));
+    });
+
+    test('ensure playedback after creating a record with child and backreference', 1, function() {
+        var store = this.store;
+        var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
+        Test.Item = Ember.Prevail.Model.extend({
+            child: Ember.Prevail.attr({backreference:'parent'}),
+            parent: Ember.Prevail.attr({backreference:'child'})
+        });
+        store.registerTypes([Test.Item]);
+
+        stop();
+        resolved
+            .then(function() { return store.createRecord(Test.Item); })
+            .then(function(item) { 
+                return store.createRecord(Test.Item, { child: item }); 
+            })
+            .then(function(parent) {
+                equal(get(parent, 'child.parent'), parent, "has parent");
             })
             .then(complete(store));
     });
@@ -1120,6 +1143,7 @@
             .then(function() { return store.ensurePlayedback(); })
             .then(complete(store));
     });
+
 
     // test('find works with type', 0, function() {});
 
