@@ -76,7 +76,7 @@
         var array = Ember.ArrayProxy.create({});
         promise.then(function(values) {
             array.set('content', values);
-        });
+        }).then(null, Prevail.Error);
         return array;
     };
 
@@ -141,7 +141,7 @@
                         promise.resolve();
                     });
                 });
-            });
+            }).then(null, Prevail.Error);
         },
 
         storeChangeSet: function(changeset) {
@@ -151,7 +151,7 @@
                         promise.resolve();
                     });
                 });
-            });
+            }).then(null, Prevail.Error);
         },
 
         getChangeSets: function() {
@@ -161,7 +161,7 @@
                         promise.resolve(values.mapProperty('data'));
                     });
                 });
-            });
+            }).then(null, Prevail.Error);
         }           
     });
 
@@ -330,7 +330,7 @@
                 }
 
                 return ob;
-            });
+            }).then(null, Prevail.Error);
         },
 
         deleteRecord: function(ob) {
@@ -376,7 +376,7 @@
                 }
 
                 return promise;
-            });
+            }).then(null, Prevail.Error);
         },
 
         find: function(type, id) {
@@ -395,13 +395,14 @@
                 set(coll, 'content', data.objects);
                 
                 return coll;
-            });
+            }).then(null, Prevail.Error);
         },
 
         clear: function() {
             var store = this;
             return this.get('adapter').clear()
-                .then(function() { store.initialize(); });
+                .then(function() { store.initialize(); })
+                .then(null, Prevail.Error);
         },
 
         /*
@@ -418,7 +419,7 @@
                 } else {
                     promise.resolve();
                 }
-            });
+            }).then(null, Prevail.Error);
         },
 
         initialize: function() {
@@ -439,7 +440,7 @@
                 this.set('data', data);
                 this.endPropertyChanges();
                 promise.resolve();
-            }, this);
+            }, this).then(null, Prevail.Error);
         },
 
         propertySet: function(ob, key, value, oldvalue) {
@@ -601,7 +602,7 @@
                         } else {
                             ob.set(change.key, change.value);
                         }
-                    });
+                    }).then(null, Prevail.Error);
             } else if (change.changeType === 'slice') {
                 return store.getObject(change.objectId)
                     .then(function(ob) {
@@ -642,12 +643,12 @@
                             });
 
                         return promise;
-                    });
+                    }).then(null, Prevail.Error);
             } else if (change.changeType === 'delete') {
                 return store.getObject(change.objectId)
                     .then(function(ob) {
                         return store.deleteRecord(ob);
-                    });
+                    }).then(null, Prevail.Error);
             } else {
                 throw new Exception("Unknown change type:" + change.changeType);
             }
@@ -734,7 +735,7 @@
             }, function(e) {
                 store.mustRememberChanges(true);
                 Prevail.Error(e);
-            });
+            }).then(null, Prevail.Error);
         },
 
         // TODO - this should actually be wrapped up in a context/branch? See playbackChanges to understand.
@@ -761,7 +762,7 @@
                 } else {
                     promise.resolve();
                 }
-            }, this);
+            }, this).then(null, Prevail.Error);
         },
 
         rememberChange: function(change) {
@@ -802,7 +803,7 @@
                     return ob;
                 }
                 return null;
-            });
+            }).then(null, Prevail.Error);
         }
     });
 })();

@@ -3,7 +3,22 @@
 /*global notDeepEqual:false, strictEqual:false, notStrictEqual:false, raises:false*/
 (function() {
     // namespace for models, so that Type.toString() returns a qualified name.
-    QUnit.config.testTimeout = 2000;
+    QUnit.config.testTimeout = 1000;
+
+    var resolved = Ember.Prevail.resolved;
+
+    var complete = function(store) {
+        return function() { 
+            return resolved.then(function() { return store.commit(); })
+                .then(function() { return store.initialize(); })
+                .then(function() { return store.ensurePlayedback(); })
+                .then(start, function(e) {
+                    log(e);
+                    throw e;
+                });
+        };
+    };
+
     /*
       ======== A Handy Little QUnit Reference ========
       http://docs.jquery.com/QUnit
@@ -30,7 +45,7 @@
 
             stop();
             this.store.clear()
-                .then(start);
+                .then(complete(this.store));
         },
 
         teardown: function() {
@@ -39,8 +54,6 @@
 
     var log = function() { console.log.apply(console, arguments); };
     var get = Ember.get;
-
-    var resolved = Ember.Prevail.resolved;
 
     test('zip', 1, function() {
         var values = Ember.Prevail.zip([1,2],[3,4]);
@@ -51,7 +64,7 @@
         var store = this.store;
 
         stop();
-        this.store.ensurePlayedback().then(start);
+        this.store.ensurePlayedback().then(complete(store));
     });
 
     test('Model namespace functions', 1, function() {
@@ -78,7 +91,7 @@
             .then(function(items) {
                 strictEqual(items.length, 1, "has one item");
             })
-            .then(start);
+            .then(complete(store));
     });
 
     test('getChangesets has no changesets', 1, function() {
@@ -92,7 +105,7 @@
             .then(function(changesets) {
                 strictEqual(changesets.length, 0, "changesets.length should be 0");
             })
-            .then(start);
+            .then(complete(store));
     });
 
     test('findall has no items', 1, function() {
@@ -106,7 +119,7 @@
             .then(function(items) {
                 strictEqual(items.length, 0, "items.length should be 0");
             })
-            .then(start);
+            .then(complete(store));
     });
 
     test('create record, commit, has one changeset, with one change', 2, function() {
@@ -124,7 +137,7 @@
                 strictEqual(changesets.length, 1, "changesets.length should be 1");
                 strictEqual(changesets.objectAt(0).changes.length, 1, "changesets[0].changes.length should be 1");
             })
-            .then(start);
+            .then(complete(store));
     });
 
     test('create record with name, commit, has one changeset, with one change', 2, function() {
@@ -145,7 +158,7 @@
                 strictEqual(changesets.length, 1, "changesets.length should be 1");
                 strictEqual(changesets.objectAt(0).changes.length, 1, "changesets[0].changes.length should be 1");
             })
-            .then(start);
+            .then(complete(store));
     });
 
     test('create record with name "test", commit, re-initialize, getChangeSets returns one changeset', 1, function() {
@@ -162,10 +175,7 @@
             .then(function(changesets) {
                 equal(changesets.length, 1, "changesets.length should be 1");
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
     test('create record, commit, re-initialize, findAll returns one item', 1, function() {
@@ -204,10 +214,7 @@
             .then(function(items) {
                 strictEqual(items.length, 2, "2 played back item");
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
     test('create a records, change name to "test", commit, findAll, returns one item with name "test"', 2, function() {
@@ -227,10 +234,7 @@
                 strictEqual(items.length, 1, "1 played back item");
                 strictEqual(get(items, 'firstObject').get('name'), "test", "'test' as name");
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
     test('create a record with name "(unnamed)", commit, reinitialize, findAll, change name to "(unnamed)q", commit, reinitialize, number of changesets equals 2', 1, function() {
@@ -254,10 +258,7 @@
             .then(function(changesets) {
                 strictEqual(changesets.length, 2, "changesets.length should be 2");
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
     test('create a record with name "(unnamed)", commit, reinitialize, findAll, change name to "(unnamed)q", commit, reinitialize, findAll, returns one item with name "(unnamed)q"', 2, function() {
@@ -281,10 +282,7 @@
                 strictEqual(items.length, 1, "1 played back item");
                 strictEqual(get(items, 'firstObject').get('name'), "(unnamed)q", "'(unnamed)q' as name");
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
     test('create record with name "test", commit, findAll, delete item', 0, function() {
@@ -299,10 +297,7 @@
             .then(function() { return store.findAll(Test.Item); })
             .then(function(items) { return store.deleteRecord(get(items, 'firstObject')); })
             .then(function() { return store.commit(); })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
     test('create record with name "test", commit, findAll, delete item, findAll returns zero items', 1, function() {
@@ -321,10 +316,7 @@
             .then(function(items) {
                 strictEqual(items.length, 0, "0 played back item");
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
     test('create a record with name "(unnamed)", commit, reinitialize, findAll, change name to "(unnamed)q", commit, reinitialize, findAll, returns one item with name "(unnamed)q, findAll, deleteItem, commit, findAll returns 0 items"', 3, function() {
@@ -355,10 +347,7 @@
             .then(function(items) {
                 strictEqual(items.length, 0, "0 played back item");
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
 
@@ -391,10 +380,7 @@
                 strictEqual(parent.get('name'), 'parent', 'parent has name');
                 strictEqual(parent.get('child.name'), 'child', 'child has name');
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
     test('create a record with children, returns same collection twice"', 1, function() {
@@ -413,10 +399,7 @@
                 var c2 = parent.get('children');
                 strictEqual(c1, c2, "same collection");
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
     test('create two record with children, returns different collections"', 1, function() {
@@ -438,10 +421,7 @@
                 var c2 = parent2.get('children');
                 notEqual(c1, c2, "different collection");
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
     test('create record with children, collection has child"', 2, function() {
@@ -463,10 +443,7 @@
                 strictEqual(parent.get('children.length'), 1, "has one child");
                 strictEqual(parent.get('children.firstObject'), child, "correct child");
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
     test('create a record with a child, should have 3 changes"', 3, function() {
@@ -494,10 +471,7 @@
                 strictEqual(changesets.objectAt(0).changes.length, 3, "changesets.length should be 3");
                 strictEqual(changesets.objectAt(0).changes.objectAt(2).changeType, 'slice', "array change");
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
     test('create a record with children, playsback parent and children"', 6, function() {
@@ -553,10 +527,7 @@
                 strictEqual(parent2.get('children.length'), 1, 'child2 exists');
                 strictEqual(parent2.get('children.firstObject').get('name'), 'child2', 'child2 has name');
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
 
@@ -589,10 +560,7 @@
                 strictEqual(changesets.objectAt(0).changes.objectAt(3).changeType, 'slice', "changesets[0].changes[3] is 'slice'");
                 strictEqual(changesets.objectAt(0).changes.objectAt(3).removed.length, 1, "changesets[0].changes[3] is 'slice.remove 1'");
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
     test('create a record with children, remove child, get children has none"', 3, function() {
@@ -623,10 +591,7 @@
                 ok(parent1, 'parent1 exists');
                 strictEqual(parent1.get('children.length'), 0, 'no children after commit');
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
     test('create two records of different types, findAll of both types"', 2, function() {
@@ -654,10 +619,7 @@
             .then(function(oranges) {
                 strictEqual(oranges.length, 1, 'one orange');
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
     test('back reference 1 to 1', 5, function() {
@@ -700,10 +662,7 @@
                 equal(parent.get('child.id'), childId, "child id matches");
                 equal(parent.get('child.parent.id'), parentId, "parent.child.parent id matches");
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
     test('back reference n to 1', 5, function() {
@@ -745,10 +704,7 @@
                 equal(parent.get('children.firstObject').get('id'), childId, "child id matches");
                 equal(parent.get('children.firstObject').get('parent.id'), parentId, "parent.children[0].parent id matches");
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
     test('back reference n to n', 5, function() {
@@ -790,10 +746,7 @@
                 equal(parent.get('children.firstObject').get('id'), childId, "child id matches");
                 equal(parent.get('children.firstObject').get('parents.firstObject').get('id'), parentId, "parent.children[0].parent id matches");
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
     test('back reference n to n with removal', 3, function() {
@@ -829,10 +782,7 @@
                 parent.get('children').removeObject(child);
                 equal(child.get('parents.length'), 0, "no parents");
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
     test('back reference 1 to 1 with removal', 4, function() {
@@ -869,10 +819,7 @@
                 parent.set('child', null);
                 ok(!child.get('parent'), "no parent");
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
     test('back reference 1 to 1 with overwrite', 6, function() {
@@ -915,10 +862,7 @@
                 ok(child2.get('parent'), "no child2 parent");
                 equal(parent, child2.get('parent'), "correct child2 parent");
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
     test('back reference n to 1 with overwrite', 5, function() {
@@ -960,10 +904,7 @@
                 ok(!child.get('parent'), "no child parent");
                 equal(parent, child2.get('parents.firstObject'), "correct child2 parent");
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
     test('back reference 1 to n with removal', 3, function() {
@@ -999,10 +940,7 @@
                 parent.get('children').removeObject(child);
                 ok(!child.get('parent'), "no parent");
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
     test('back reference n to 1 with removal', 3, function() {
@@ -1038,10 +976,7 @@
                 parent.set('child', null);
                 equal(child.get('parents.length'), 0, "no parents");
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
     test('back reference 1 to 1 with deletion', 7, function() {
@@ -1086,10 +1021,7 @@
                 ok(!child.get('parent'), "has no parent");
                 ok(!parent.get('child'), "has no child");
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
     });
 
     test('back reference n to n with deletion', 9, function() {
@@ -1137,10 +1069,56 @@
                 equal(child.get('parents.length'), 0, "has no parents");
                 equal(parent.get('children.length'), 0, "has no children");
             })
-            .then(start, function(e) {
-                log(e);
-                throw e;
-            });
+            .then(complete(store));
+    });
+
+    test('back reference 1 to n with deletion', 8, function() {
+        var store = this.store;
+        var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
+        Test.Item = Ember.Prevail.Model.extend({
+            children: Ember.Prevail.collection({ backreference: 'parent' }),
+            parent: Ember.Prevail.attr({ backreference: 'children' })
+        });
+        store.registerTypes([Test.Item]);
+
+        var parent, child;
+
+        stop();
+        resolved
+            .then(function() { return store.createRecord(Test.Item); })
+            .then(function(item) { 
+                parent = item; 
+                return store.createRecord(Test.Item); 
+            })
+            .then(function(item) { 
+                child = item;
+                parent.get('children').addObject(child);
+            })
+            .then(function() {
+                ok(parent.get('children.firstObject.parent') === parent, 'backreference is set');
+            })
+            .then(function() {
+                child = parent.get('children.firstObject');
+
+                // child and parent are defined
+                ok(child.get('parent'), "has parent");
+                ok(parent.get('children.firstObject'), "has child");
+                
+                // bidirectional relationship
+                equal(parent, child.get('parent'), "correct parent");
+                equal(parent.get('children.length'), 1, "has children");
+                equal(parent.get('children.firstObject'), child, "correct child");
+
+                return store.deleteRecord(child);
+            })
+            .then(function() {
+                ok(!child.get('parent'), "has no parent");
+                equal(parent.get('children.length'), 0, "has no children");
+            })
+            .then(function() { return store.commit(); })
+            .then(function() { return store.initialize(); })
+            .then(function() { return store.ensurePlayedback(); })
+            .then(complete(store));
     });
 
     // test('find works with type', 0, function() {});
