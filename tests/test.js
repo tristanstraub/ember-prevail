@@ -1092,6 +1092,57 @@
             });
     });
 
+    test('back reference n to n with deletion', 9, function() {
+        var store = this.store;
+        var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
+        Test.Item = Ember.Prevail.Model.extend({
+            children: Ember.Prevail.collection({ backreference: 'parents' }),
+            parents: Ember.Prevail.collection({ backreference: 'children' })
+        });
+        store.registerTypes([Test.Item]);
+
+        var parent, child;
+
+        stop();
+        resolved
+            .then(function() { return store.createRecord(Test.Item); })
+            .then(function(item) { 
+                parent = item; 
+                return store.createRecord(Test.Item); 
+            })
+            .then(function(item) { 
+                child = item;
+                parent.get('children').addObject(child);
+            })
+            .then(function() {
+                ok(parent.get('children.firstObject.parents.firstObject') === parent, 'backreference is set');
+            })
+            .then(function() {
+                child = parent.get('children.firstObject');
+
+                // child and parent are defined
+                ok(child.get('parents.firstObject'), "has parent");
+                ok(parent.get('children.firstObject'), "has child")
+                
+                // bidirectional relationship
+                equal(parent, child.get('parents.firstObject'), "correct parent");
+                equal(parent.get('children.firstObject'), child, "correct child");
+
+                equal(child.get('parents.length'), 1, "has no parents");
+                equal(parent.get('children.length'), 1, "has no children")
+
+                return store.deleteRecord(child);
+            })
+            .then(function() {
+                equal(child.get('parents.length'), 0, "has no parents");
+                equal(parent.get('children.length'), 0, "has no children")
+            })
+            .then(start, function(e) {
+                log(e);
+                throw e;
+            });
+    });
+
     // test('find works with type', 0, function() {});
 
 }());

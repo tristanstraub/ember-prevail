@@ -184,11 +184,11 @@
         eachForeign: function(fn, collection) {
             collection.forEach(function(parent_key) {
                 try {
-                var leftIndex = parent_key.indexOf('_');
-                var parent = parent_key.slice(0, leftIndex);
-                var key = parent_key.slice(leftIndex + 1, parent_key.length);
-                fn.call(this, parent, key);
-                } catch(e) { log(e); throw e; }
+                    var leftIndex = parent_key.indexOf('_');
+                    var parent = parent_key.slice(0, leftIndex);
+                    var key = parent_key.slice(leftIndex + 1, parent_key.length);
+                    fn.call(this, parent, key);
+                } catch(e) { Ember.Prevail.Error(e); }
             });
         },
 
@@ -201,13 +201,11 @@
         },
 
         addForeignReference: function(parent, key) {
-            log('add fref: %@ %@'.fmt(parent.get('id'), key));
             var refs = this.get('_foreign_references_');
             refs.addObject(parent.get('id') + "_" + key);
         },
 
         addForeignCollection: function(parent, key) {
-            log('add fcol: %@ %@'.fmt(parent.get('id'), key));
             var refs = this.get('_foreign_collections_');
             refs.addObject(parent.get('id') + "_" + key);
         },
