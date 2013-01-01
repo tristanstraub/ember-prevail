@@ -39,8 +39,7 @@
 
     var log = function() { console.log.apply(console, arguments); };
 
-    var resolved = Ember.makePromise();
-    resolved.resolve();
+    var resolved = Ember.Prevail.resolved;
 
     test('zip', 1, function() {
 	var values = Ember.Prevail.zip([1,2],[3,4]);
@@ -225,7 +224,7 @@
 	    .then(function() { return store.findAll(Test.Item); })
 	    .then(function(items) {
 		strictEqual(items.length, 1, "1 played back item");
-		strictEqual(items.objectAt(0).get('name'), "test", "'test' as name");
+		strictEqual(items.get('firstObject').get('name'), "test", "'test' as name");
 	    })
 	    .then(start, function(e) {
 		log(e);
@@ -246,7 +245,7 @@
 	    .then(function() { return store.commit(); })
 	    .then(function() { return store.initialize(); })
 	    .then(function() { return store.findAll(Test.Item); })
-	    .then(function(items) { items.objectAt(0).set('name', "(unnamed)q"); })
+	    .then(function(items) { items.get('firstObject').set('name', "(unnamed)q"); })
 	    .then(function() { return store.commit(); })
 	    .then(function() { return store.initialize(); })
 	    .then(function(ob) { return store.get('adapter').getChangeSets();
@@ -273,13 +272,13 @@
 	    .then(function() { return store.commit(); })
 	    .then(function() { return store.initialize(); })
 	    .then(function() { return store.findAll(Test.Item); })
-	    .then(function(items) { items.objectAt(0).set('name', "(unnamed)q"); })
+	    .then(function(items) { items.get('firstObject').set('name', "(unnamed)q"); })
 	    .then(function() { return store.commit(); })
 	    .then(function() { return store.initialize(); })
 	    .then(function() { return store.findAll(Test.Item); })
 	    .then(function(items) {
 		strictEqual(items.length, 1, "1 played back item");
-		strictEqual(items.objectAt(0).get('name'), "(unnamed)q", "'(unnamed)q' as name");
+		strictEqual(items.get('firstObject').get('name'), "(unnamed)q", "'(unnamed)q' as name");
 	    })
 	    .then(start, function(e) {
 		log(e);
@@ -297,7 +296,7 @@
 	this.store.createRecord(Test.Item, { name: "test" })
 	    .then(function() { return store.commit(); })
 	    .then(function() { return store.findAll(Test.Item); })
-	    .then(function(items) { return store.deleteRecord(items.objectAt(0)); })
+	    .then(function(items) { return store.deleteRecord(items.get('firstObject')); })
 	    .then(function() { return store.commit(); })
 	    .then(start, function(e) {
 		log(e);
@@ -315,7 +314,7 @@
 	this.store.createRecord(Test.Item, { name: "test" })
 	    .then(function() { return store.commit(); })
 	    .then(function() { return store.findAll(Test.Item); })
-	    .then(function(items) { return store.deleteRecord(items.objectAt(0)); })
+	    .then(function(items) { return store.deleteRecord(items.get('firstObject')); })
 	    .then(function() { return store.commit(); })
 	    .then(function() { return store.findAll(Test.Item); })
 	    .then(function(items) {
@@ -340,16 +339,16 @@
 	    .then(function() { return store.commit(); })
 	    .then(function() { return store.initialize(); })
 	    .then(function() { return store.findAll(Test.Item); })
-	    .then(function(items) { items.objectAt(0).set('name', "(unnamed)q"); })
+	    .then(function(items) { items.get('firstObject').set('name', "(unnamed)q"); })
 	    .then(function() { return store.commit(); })
 	    .then(function() { return store.initialize(); })
 	    .then(function() { return store.findAll(Test.Item); })
 	    .then(function(items) {
 		strictEqual(items.length, 1, "1 played back item");
-		strictEqual(items.objectAt(0).get('name'), "(unnamed)q", "'(unnamed)q' as name");
+		strictEqual(items.get('firstObject').get('name'), "(unnamed)q", "'(unnamed)q' as name");
 	    })
 	    .then(function() { return store.findAll(Test.Item); })
-	    .then(function(items) { return store.deleteRecord(items.objectAt(0)); })
+	    .then(function(items) { return store.deleteRecord(items.get('firstObject')); })
 	    .then(function() { return store.commit(); })
 	    .then(function() { return store.findAll(Test.Item); })
 	    .then(function(items) {
@@ -459,9 +458,9 @@
 	    .then(function() { return store.createRecord(Test.Item); })
 	    .then(function(ob) { parent = ob; return store.createRecord(Test.Item); })
 	    .then(function(child) {
-		parent.get('children').pushObject(child);
+		parent.get('children').addObject(child);
 		strictEqual(parent.get('children.length'), 1, "has one child");
-		strictEqual(parent.get('children').objectAt(0), child, "correct child");
+		strictEqual(parent.get('children.firstObject'), child, "correct child");
 	    })
 	    .then(start, function(e) {
 		log(e);
@@ -485,7 +484,7 @@
 	    .then(function() { return store.createRecord(Test.Item, { name: "parent1" }); })
 	    .then(function(ob) { parent = ob; return store.createRecord(Test.Item, { name: "child1" }); })
 	    .then(function(child) {
-		parent.get('children').pushObject(child);
+		parent.get('children').addObject(child);
 	    })
 	    .then(function() { return store.commit(); })
 	    .then(function() { return store.get('adapter').getChangeSets(); })
@@ -527,7 +526,7 @@
 	    .then(function(child1) { 
 		return store.find(parentId1)
 		    .then(function(parent1) {
-			parent1.get('children').pushObject(child1)
+			parent1.get('children').addObject(child1)
 		    });
 	    })
 	    .then(function() {
@@ -536,7 +535,7 @@
 	    .then(function(child2) { 
 		return store.find(parentId2)
 		    .then(function(parent2) {
-			parent2.get('children').pushObject(child2)
+			parent2.get('children').addObject(child2)
 		    });
 	    })
 	    .then(function() { return store.commit(); })
@@ -545,13 +544,13 @@
 	    .then(function(parent1) {
 	    	ok(parent1, 'parent1 exists');
 	    	strictEqual(parent1.get('children.length'), 1, 'child1 exists');
-	    	strictEqual(parent1.get('children').objectAt(0).get('name'), 'child1', 'child1 has name');
+	    	strictEqual(parent1.get('children.firstObject').get('name'), 'child1', 'child1 has name');
 	    })
 	    .then(function() { return store.find(parentId2); })
 	    .then(function(parent2) {
 	    	ok(parent2, 'parent2 exists');
 	    	strictEqual(parent2.get('children.length'), 1, 'child2 exists');
-	    	strictEqual(parent2.get('children').objectAt(0).get('name'), 'child2', 'child2 has name');
+	    	strictEqual(parent2.get('children.firstObject').get('name'), 'child2', 'child2 has name');
 	    })
 	    .then(start, function(e) {
 		log(e);
@@ -577,7 +576,7 @@
 	    .then(function(ob) { parent = ob; })
 	    .then(function() { return store.createRecord(Test.Item, { name: "child" }); })
 	    .then(function(child) {
-		parent.get('children').pushObject(child);
+		parent.get('children').addObject(child);
 		parent.get('children').removeObject(child);
 		strictEqual(parent.get('children.length'), 0, "no children before commit");
 	    })
@@ -587,7 +586,7 @@
 		strictEqual(changesets.length, 1, "changesets.length should be 1");
 		strictEqual(changesets.objectAt(0).changes.length, 4, "changesets[0].changes.length should be 4");
 		strictEqual(changesets.objectAt(0).changes.objectAt(3).changeType, 'slice', "changesets[0].changes[3] is 'slice'");
-		strictEqual(changesets.objectAt(0).changes.objectAt(3).removeCount, 1, "changesets[0].changes[3] is 'slice.remove 1'");
+		strictEqual(changesets.objectAt(0).changes.objectAt(3).removed.length, 1, "changesets[0].changes[3] is 'slice.remove 1'");
 	    })
 	    .then(start, function(e) {
 		log(e);
@@ -612,7 +611,7 @@
 	    .then(function(ob) { parent = ob; })
 	    .then(function() { return store.createRecord(Test.Item, { name: "child" }); })
 	    .then(function(child) {
-		parent.get('children').pushObject(child);
+		parent.get('children').addObject(child);
 		parent.get('children').removeObject(child);
 		strictEqual(parent.get('children.length'), 0, "no children before commit");
 	    })
@@ -728,10 +727,10 @@
 	    })
 	    .then(function(child) { 
 		childId = child.get('id');
-		parent.get('children').pushObject(child);
+		parent.get('children').addObject(child);
 	    })
 	    .then(function() {
-	    	ok(parent.get('children').objectAt(0).get('parent') == parent, 'backreference is set');
+	    	ok(parent.get('children.firstObject').get('parent') == parent, 'backreference is set');
 	    })
 	    .then(function() { return store.commit(); })
 	    .then(function() { return store.initialize(); })
@@ -742,8 +741,8 @@
 	    .then(function() { return store.find(parentId); })
 	    .then(function(parent) {
 		equal(parent.get('id'), parentId, "parent id matches");
-		equal(parent.get('children').objectAt(0).get('id'), childId, "child id matches");
-		equal(parent.get('children').objectAt(0).get('parent.id'), parentId, "parent.children[0].parent id matches");
+		equal(parent.get('children.firstObject').get('id'), childId, "child id matches");
+		equal(parent.get('children.firstObject').get('parent.id'), parentId, "parent.children[0].parent id matches");
 	    })
 	    .then(start, function(e) {
 		log(e);
@@ -773,10 +772,10 @@
 	    })
 	    .then(function(child) { 
 		childId = child.get('id');
-		parent.get('children').pushObject(child);
+		parent.get('children').addObject(child);
 	    })
 	    .then(function() {
-	    	ok(parent.get('children').objectAt(0).get('parents').objectAt(0) == parent, 'backreference is set');
+	    	ok(parent.get('children.firstObject').get('parents.firstObject') == parent, 'backreference is set');
 	    })
 	    .then(function() { return store.commit(); })
 	    .then(function() { return store.initialize(); })
@@ -787,8 +786,8 @@
 	    .then(function() { return store.find(parentId); })
 	    .then(function(parent) {
 		equal(parent.get('id'), parentId, "parent id matches");
-		equal(parent.get('children').objectAt(0).get('id'), childId, "child id matches");
-		equal(parent.get('children').objectAt(0).get('parents').objectAt(0).get('id'), parentId, "parent.children[0].parent id matches");
+		equal(parent.get('children.firstObject').get('id'), childId, "child id matches");
+		equal(parent.get('children.firstObject').get('parents.firstObject').get('id'), parentId, "parent.children[0].parent id matches");
 	    })
 	    .then(start, function(e) {
 		log(e);
@@ -818,13 +817,13 @@
 	    })
 	    .then(function(child) { 
 		childId = child.get('id');
-		parent.get('children').pushObject(child);
+		parent.get('children').addObject(child);
 	    })
 	    .then(function() {
-	    	ok(parent.get('children').objectAt(0).get('parents').objectAt(0) == parent, 'backreference is set');
+	    	ok(parent.get('children.firstObject').get('parents.firstObject') == parent, 'backreference is set');
 	    })
 	    .then(function() {
-		var child = parent.get('children').objectAt(0);
+		var child = parent.get('children.firstObject');
 		equal(child.get('parents.length'), 1, "has parents");
 		parent.get('children').removeObject(child);
 		equal(child.get('parents.length'), 0, "no parents");
