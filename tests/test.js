@@ -105,27 +105,6 @@
             .then(complete(store));
     });
 
-    test('ensure playedback after creating a record with child and backreference', 1, function() {
-        var store = this.store;
-        var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
-        Test.Item = Ember.Prevail.Model.extend({
-            child: Ember.Prevail.attr({backreference:'parent'}),
-            parent: Ember.Prevail.attr({backreference:'child'})
-        });
-        store.registerTypes([Test.Item]);
-
-        stop();
-        resolved
-            .then(function() { return store.createRecord(Test.Item); })
-            .then(function(item) { 
-                return store.createRecord(Test.Item, { child: item }); 
-            })
-            .then(function(parent) {
-                equal(get(parent, 'child.parent'), parent, "has parent");
-            })
-            .then(complete(store));
-    });
-
     test('getChangesets has no changesets', 1, function() {
         var store = this.store;
         var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
@@ -429,6 +408,26 @@
         }
     });
 
+    test('ensure playedback after creating a record with child and backreference', 1, function() {
+        var store = this.store;
+        var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
+        Test.Item = Ember.Prevail.Model.extend({
+            child: Ember.Prevail.attr({backreference:'parent'}),
+            parent: Ember.Prevail.attr({backreference:'child'})
+        });
+        store.registerTypes([Test.Item]);
+
+        stop();
+        resolved
+            .then(function() { return store.createRecord(Test.Item); })
+            .then(function(item) { 
+                return store.createRecord(Test.Item, { child: item }); 
+            })
+            .then(function(parent) {
+                equal(get(parent, 'child.parent'), parent, "has parent");
+            })
+            .then(complete(store));
+    });
 
     test('create a record with children, returns same collection twice"', 1, function() {
         var store = this.store;
