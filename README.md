@@ -36,7 +36,7 @@ Hook up the store, using lawnchair as a backend:
 ```javascript
 var store = Ember.Prevail.Store.create({
     adapter: Ember.Prevail.LawnchairAdapter.extend({
-        dbName: 'test'
+        dbName: 'forest'
     })
 });
 ```
