@@ -1,105 +1,96 @@
-ember-data-lawnchair is an adapter for ember-data for lawnchair.
+``ember-prevail`` is an attempt to implement object prevalence using ember. Changes to the object model are saved as
+changes to the supporting database. When the system is loaded, all changes are loaded and played back.
 
-The following demonstrates its usage:
+The object model supports attributes and collections for primitive types, and reference types, along with backreferences.
+
+Id's are automatically generated and assumed to be unique among all objects, not just objects of a particular type.
+
+The collection of all objects can be referenced for queries, and will notify observers when records are added or removed.
+
+Support will be added for the following:
+
+- Schema changes will be saves as changes along with data changes.
+- Branching and merging of data for long or separate transactions.
+- Snapshots for faster loading.
+
+Create a namespace for holding the model, if you aren't storing it directly in ``App``, like ember-data demonstrates:
 
 ```javascript
-var App = Ember.Application.create({
-    Router: Ember.Router.extend({
-	root: Ember.Route.extend({
-	    index: Ember.Route.extend({
-		route: '/',
-		connectOutlets: function(router) {
-		    router.get('applicationController').connectOutlet('content', 'main', Ember.Prevail.toCollection(App.store.findAll(App.Item)));
-		},
+var Model = Ember.Namespace.create({toString: function() { return "Model"; }});
+```
 
-		addItem: function(router, event) {
-		    App.store.createRecord(App.Item, { name: '(unnamed)' })
-			.then(function() { 
-			    return App.store.commit(); 
-			});
-		},
+Create your model classes with attributes, and collections along with back references for your collections:
 
-		saveItem: function(router, event) {
-		    return App.store.commit();
-		},
+```javascript
+var PR = Ember.Prevail;
+Model.Tree = PR.Model.extend({
+    apples: PR.collection({backreference:'tree'})
+});
 
-		deleteItem: function(router, event) {
-		    var item = event.context;
-		    App.store.deleteRecord(item)
-			.then(function() {
-			    return App.store.commit();
-			});
-		},
+Model.Apple = PR.Model.extend({
+    tree: PR.attr({backreference:'apples'})
+});
+```
 
-		clearStore: function(router, event) {
-		    return App.store.clear();
-		}
-	    })
-	})
+Hook up the store, using lawnchair as a backend:
+
+```javascript
+var store = Ember.Prevail.Store.create({
+    adapter: Ember.Prevail.LawnchairAdapter.extend({
+        dbName: 'test'
     })
 });
+```
 
-App.Item = Ember.Prevail.Model.extend({
-    name: Ember.Prevail.attr('string'),
-    didPropertyChange: function() {
-	return this.get('store').commit();
-    }.observes('name')
+The following actions will be execute sequentially by using promises.
+
+```javascript
+// use a precreated promise that has already been resolved
+var promise = Ember.Prevail.resolved; 
+
+// create some cheeky globals for keeping context within our promises.
+var tree;
+```
+
+Create a tree:
+
+```javascript
+promise = promise.then(function() {
+    return store.createRecord(Model.Tree);
+}).then(function(record) { 
+    tree = record;
 });
+```
 
-App.store = Ember.Prevail.Store.create({
-    adapter: Ember.Prevail.LawnchairAdapter
+Add an apple:
+
+```javascript
+promise = promise.then(function() {
+    return store.createRecord(Model.Leaf);
+}).then(function(record) {
+    tree.get('apples').addObject(record);
 });
-App.store.registerTypes([App.Item]);
+```
 
-App.ApplicationController = Ember.Controller.extend();
-App.ApplicationView = Ember.View.extend({
-    templateName: 'application'
+Find all trees:
+
+```javascript
+promise = promise.then(function() {
+    return store.findAll(Model.Tree);
+}).then(function(trees) {
+    // do something with the trees
 });
+```
 
-App.MainController = Ember.Controller.extend();
-App.MainView = Ember.View.extend({
-    templateName: 'main'
+Send everything to permanent storage:
+
+```javascript
+promise = promise.then(function() {
+    return store.commit();
+}).then(function() {
+    alert('Hooray for saving the apples and trees!');
 });
 ```
 
 
-```html
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8"/>
-    
-    <script type="text/x-handlebars" data-template-name="application">
-      {{outlet content}}
-    </script>
 
-    <script type="text/x-handlebars" data-template-name="main">
-      <a href="#" {{action clearStore }}>Clear store</a>
-      <a href="#" {{action addItem }}>Add Item</a>
-      <ul>
-	{{#each content}}
-	<li>{{this.id}} {{view Ember.TextField valueBinding="name"}}
-
-	[{{name}}]
-	{{#if isDirty}}
-	<a href="#" {{action saveItem this}}>Save</a>
-	{{/if}}
-	<a href="#" {{action deleteItem this}}>Delete</a>
-	</li>
-	{{/each}}
-      </ul>
-    </script>
-
-    <script type="text/javascript" src="lib/jquery-1.8.3.min.js"></script>
-    <script type="text/javascript" src="lib/handlebars-1.0.rc.1.js"></script>
-    <script type="text/javascript" src="lib/ember.js"></script>
-    <script type="text/javascript" src="lib/lawnchair.js"></script>
-    <script type="text/javascript" src="lib/lawnchair-adapter-indexed-db-0.6.1.js"></script>
-    <script type="text/javascript" src="dist/ember-prevail.js"></script>
-    <script type="text/javascript" src="demo.js"></script>
-  </head>
-  <body>
-
-  </body>
-</html>
-```
