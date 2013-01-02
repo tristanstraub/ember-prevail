@@ -3,7 +3,7 @@
 /*global notDeepEqual:false, strictEqual:false, notStrictEqual:false, raises:false*/
 (function() {
     // namespace for models, so that Type.toString() returns a qualified name.
-    QUnit.config.testTimeout = 500;
+    QUnit.config.testTimeout = 4000;
 
     var resolved = Ember.Prevail.resolved;
 
