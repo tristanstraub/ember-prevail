@@ -1,17 +1,16 @@
-``ember-prevail`` is an attempt to implement object prevalence using ember. Changes to the object model are saved as
-changes to the supporting database. When the system is loaded, all changes are loaded and played back.
+``ember-prevail`` implements object prevalence on top of emberjs. Data changes are persisted as sequental changes to the object graph. When an ember-prevail store is initialized, all changes are played back, starting with an empty object graph.
 
 The object model supports attributes and collections for primitive types, and reference types, along with backreferences.
 
-Id's are automatically generated and assumed to be unique among all objects, not just objects of a particular type.
+Id's are automatically generated and are unique among all objects, not just objects of a particular type.
 
 The collection of all objects can be referenced for queries, and will notify observers when records are added or removed.
 
 Support will be added for the following:
 
-- Schema changes will be saves as changes along with data changes.
-- Branching and merging of data for long or separate transactions.
-- Snapshots for faster loading.
+1. Snapshots for faster loading.
+2. Schema changes will be saved as changes along with data changes.
+3. Branching and merging of data for long or separate transactions.
 
 Create a namespace for holding the model, if you aren't storing it directly in ``App``, like ember-data demonstrates:
 
