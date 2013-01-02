@@ -65,7 +65,7 @@ Add an apple:
 
 ```javascript
 promise = promise.then(function() {
-    return store.createRecord(Model.Leaf);
+    return store.createRecord(Model.Apple);
 }).then(function(record) {
     tree.get('apples').addObject(record);
 });
