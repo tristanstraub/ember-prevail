@@ -37,20 +37,21 @@
       notStrictEqual(actual, expected, [message])
       raises(block, [expected], [message])
     */
-    module('ember-prevail', {
+    var globalSetup = function() {
+        this.store = Ember.Prevail.Store.create({
+            adapter: Ember.Prevail.LawnchairAdapter.extend({
+                dbName: 'test'
+            })
+        });
+
+        stop();
+        this.store.clear()
+            .then(complete(this.store));
+    };
+
+    module('utils', {
         setup: function() {
-            this.store = Ember.Prevail.Store.create({
-                adapter: Ember.Prevail.LawnchairAdapter.extend({
-                    dbName: 'test'
-                })
-            });
-
-            stop();
-            this.store.clear()
-                .then(complete(this.store));
-        },
-
-        teardown: function() {
+            globalSetup.apply(this);
         }
     });
 
@@ -77,10 +78,18 @@
         strictEqual(Test.Item.toString(), "Test.Item", "correct class name");
     });
 
+    module('simple attributes', {
+        setup: function() {
+            globalSetup.apply(this);
+        }
+    });
+
     test('ensure playedback after creating a record', 1, function() {
         var store = this.store;
         var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
-        Test.Item = Ember.Prevail.Model.extend({});
+        Test.Item = Ember.Prevail.Model.extend({
+            name: Ember.Prevail.attr()
+        });
         store.registerTypes([Test.Item]);
 
         stop();
@@ -163,7 +172,7 @@
             .then(complete(store));
     });
 
-    test('create record with name, commit, has one changeset, with one change', 2, function() {
+    test('create record with name, commit, has one changeset, with two changes', 4, function() {
         var store = this.store;
         var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
         Test.Item = Ember.Prevail.Model.extend({
@@ -179,7 +188,9 @@
                                })
             .then(function(changesets) {
                 strictEqual(changesets.length, 1, "changesets.length should be 1");
-                strictEqual(changesets.objectAt(0).changes.length, 1, "changesets[0].changes.length should be 1");
+                strictEqual(changesets.objectAt(0).changes.length, 2, "changesets[0].changes.length should be 1");
+                strictEqual(changesets.objectAt(0).changes.objectAt(0).changeType, 'create', "create change");
+                strictEqual(changesets.objectAt(0).changes.objectAt(1).changeType, 'set', "set change");
             })
             .then(complete(store));
     });
@@ -187,7 +198,9 @@
     test('create record with name "test", commit, re-initialize, getChangeSets returns one changeset', 1, function() {
         var store = this.store;
         var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
-        Test.Item = Ember.Prevail.Model.extend({});
+        Test.Item = Ember.Prevail.Model.extend({
+            name: Ember.Prevail.attr()
+        });
         store.registerTypes([Test.Item]);
 
         stop();
@@ -244,7 +257,7 @@
         var store = this.store;
         var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
         Test.Item = Ember.Prevail.Model.extend({
-            name: Ember.Prevail.attr('string')
+            name: Ember.Prevail.attr()
         });
         store.registerTypes([Test.Item]);
 
@@ -264,7 +277,7 @@
         var store = this.store;
         var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
         Test.Item = Ember.Prevail.Model.extend({
-            name: Ember.Prevail.attr('string')
+            name: Ember.Prevail.attr()
         });
         store.registerTypes([Test.Item]);
 
@@ -288,7 +301,7 @@
         var store = this.store;
         var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
         Test.Item = Ember.Prevail.Model.extend({
-            name: Ember.Prevail.attr('string')
+            name: Ember.Prevail.attr()
         });
         store.registerTypes([Test.Item]);
 
@@ -311,7 +324,9 @@
     test('create record with name "test", commit, findAll, delete item', 0, function() {
         var store = this.store;
         var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
-        Test.Item = Ember.Prevail.Model.extend({});
+        Test.Item = Ember.Prevail.Model.extend({
+            name: Ember.Prevail.attr()
+        });
         store.registerTypes([Test.Item]);
 
         stop();
@@ -326,7 +341,9 @@
     test('create record with name "test", commit, findAll, delete item, findAll returns zero items', 1, function() {
         var store = this.store;
         var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
-        Test.Item = Ember.Prevail.Model.extend({});
+        Test.Item = Ember.Prevail.Model.extend({
+            name: Ember.Prevail.attr()
+        });
         store.registerTypes([Test.Item]);
 
         stop();
@@ -346,7 +363,7 @@
         var store = this.store;
         var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
         Test.Item = Ember.Prevail.Model.extend({
-            name: Ember.Prevail.attr('string')
+            name: Ember.Prevail.attr()
         });
         store.registerTypes([Test.Item]);
 
@@ -405,6 +422,13 @@
             })
             .then(complete(store));
     });
+
+    module('collections', {
+        setup: function() {
+            globalSetup.apply(this);
+        }
+    });
+
 
     test('create a record with children, returns same collection twice"', 1, function() {
         var store = this.store;
@@ -469,7 +493,7 @@
             .then(complete(store));
     });
 
-    test('create a record with a child, should have 3 changes"', 3, function() {
+    test('create a record with a child, should have 5 changes"', 3, function() {
         var store = this.store;
         var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
         Test.Item = Ember.Prevail.Model.extend({
@@ -490,9 +514,9 @@
             .then(function() { return store.commit(); })
             .then(function() { return store.get('adapter').getChangeSets(); })
             .then(function(changesets) {
-                strictEqual(changesets.length, 1, "changesets.length should be 3");
-                strictEqual(changesets.objectAt(0).changes.length, 3, "changesets.length should be 3");
-                strictEqual(changesets.objectAt(0).changes.objectAt(2).changeType, 'slice', "array change");
+                strictEqual(changesets.length, 1, "changesets.length should be 1");
+                strictEqual(changesets.objectAt(0).changes.length, 5, "changesets[0].changes.length should be 5");
+                strictEqual(changesets.objectAt(0).changes.objectAt(4).changeType, 'slice', "array change");
             })
             .then(complete(store));
     });
@@ -554,7 +578,7 @@
     });
 
 
-    test('create a record with children, remove child, has 4 changes"', 5, function() {
+    test('create a record with children, remove child, has 6 changes"', 7, function() {
         var store = this.store;
         var Test = Ember.Namespace.create({ toString: function() { return "Test"; }});
         Test.Item = Ember.Prevail.Model.extend({
@@ -579,9 +603,11 @@
             .then(function() { return store.get('adapter').getChangeSets(); })
             .then(function(changesets) {
                 strictEqual(changesets.length, 1, "changesets.length should be 1");
-                strictEqual(changesets.objectAt(0).changes.length, 4, "changesets[0].changes.length should be 4");
-                strictEqual(changesets.objectAt(0).changes.objectAt(3).changeType, 'slice', "changesets[0].changes[3] is 'slice'");
-                strictEqual(changesets.objectAt(0).changes.objectAt(3).removed.length, 1, "changesets[0].changes[3] is 'slice.remove 1'");
+                strictEqual(changesets.objectAt(0).changes.length, 6, "changesets[0].changes.length should be 4");
+                strictEqual(changesets.objectAt(0).changes.objectAt(4).changeType, 'slice', "changesets[0].changes[4] is 'slice'");
+                strictEqual(changesets.objectAt(0).changes.objectAt(4).added.length, 1, "changesets[0].changes[4] is 'slice.add 1'");
+                strictEqual(changesets.objectAt(0).changes.objectAt(5).changeType, 'slice', "changesets[0].changes[5] is 'slice'");
+                strictEqual(changesets.objectAt(0).changes.objectAt(5).removed.length, 1, "changesets[0].changes[5] is 'slice.remove 1'");
             })
             .then(complete(store));
     });
@@ -643,6 +669,12 @@
                 strictEqual(oranges.length, 1, 'one orange');
             })
             .then(complete(store));
+    });
+
+    module('backreferences', {
+        setup: function() {
+            globalSetup.apply(this);
+        }
     });
 
     test('back reference 1 to 1', 5, function() {
@@ -1145,7 +1177,14 @@
     });
 
 
-    // test('find works with type', 0, function() {});
+    module('misc', {
+        setup: function() {
+            globalSetup.apply(this);
+        }
+    });
 
+    // test('find works with type', 0, function() {});
+    // test('schema versioning in changesets, add and remove computed attributes', 0, function() {});
 }());
+
 

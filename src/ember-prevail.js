@@ -311,18 +311,14 @@
         },
 
         createRecord: function(type, hash, id) {
+            Ember.assert("Can't set id in hash of createRecord", !hash || !hash.id);
+
             var store = this;
             return this.ensurePlayedback().then(function() {
                 hash = hash || {};
                 var ob = type.create({store: store, id: hash.id || id || Prevail.newId()});
 
                 store.rememberObject(ob);
-
-                // TODO -- remember should a stack
-                var remember = store.get('remember');
-                store.set('remember', false);
-                ob.setProperties(hash);
-                store.set('remember', remember);
 
                 if (store.get('remember')) {
                     var change = {
@@ -331,11 +327,21 @@
                         changeType: 'create',
                         objectType: type.toString(),
                         // change payload
-                        objectId: ob.get('id'),
-                        properties: Ember.copy(hash)
+                        objectId: ob.get('id')
                     };
 
                     store.rememberChange(change);
+                }
+
+                for(var prop in hash) {
+                    if (hash.hasOwnProperty(prop)) {
+                        var metaParent = type.metaForProperty(prop);
+                        if (metaParent.isCollection) {
+                            get(ob, prop).addObjects(hash[prop]);
+                        } else {
+                            set(ob, prop, hash[prop]);
+                        }
+                    }
                 }
 
                 return ob;
@@ -487,6 +493,7 @@
             }
         },
 
+            // TODO -- remember should a stack
         dontRemember: function(fn) {
             var remember = this.get('remember');
             this.mustRememberChanges(false);
@@ -616,7 +623,7 @@
             if (change.changeType === 'create') {
                 type = this.get('types')[change.objectType];//get(store, change.objectType, false) || get(Ember.lookup, change.objectType);
                 Ember.assert('type must exist', !!type);
-                return store.createRecord(type, change.properties, change.objectId);
+                return store.createRecord(type, {}, change.objectId);
             } else if (change.changeType === 'set') {
                 return store.getObject(change.objectId)
                     .then(function(ob) {
