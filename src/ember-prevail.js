@@ -20,6 +20,13 @@
 
     var resolved = Prevail.resolved;
 
+  
+
+    Prevail.ErrorLogAndThrow = function(e) {
+        log(e + '; ' + Ember.inspect(e));
+        throw e;
+    };
+
     Prevail.Error = function(e) {
         log(e + '; ' + Ember.inspect(e));
         throw e;
@@ -70,7 +77,7 @@
 
     var withPromise = function(fn, binding) {
         var promise = Ember.makePromise();
-        promise.then(null, Prevail.Error);
+        promise.then(null, Prevail.ErrorLogAndThrow);
         return fn.call(binding, promise) || promise;
     };
 
@@ -78,7 +85,7 @@
         var array = Ember.ArrayProxy.create({});
         promise.then(function(values) {
             array.set('content', values);
-        }).then(null, Prevail.Error);
+        }).then(null, Prevail.ErrorLogAndThrow);
         return array;
     };
 
@@ -100,7 +107,7 @@
                 }
 
                 return value;
-            } catch(e) { Ember.Prevail.Error(e); }
+            } catch(e) { Ember.Prevail.Error(e); throw e; }
         }),
 
         enumerableWillChange: function(content, removed, added) {
@@ -117,7 +124,7 @@
                 if (added) {
                     this.addObjects(added.filter(match));
                 }
-            } catch(e) { Ember.Prevail.Error(e); }
+            } catch(e) { Ember.Prevail.ErrorLogAndThrow(e); }
         }
     });
 
@@ -143,7 +150,7 @@
                         promise.resolve();
                     });
                 });
-            }).then(null, Prevail.Error);
+            }).then(null, Prevail.ErrorLogAndThrow);
         },
 
         storeChangeSet: function(changeset) {
@@ -153,7 +160,7 @@
                         promise.resolve();
                     });
                 });
-            }).then(null, Prevail.Error);
+            }).then(null, Prevail.ErrorLogAndThrow);
         },
 
         getChangeSets: function() {
@@ -163,7 +170,7 @@
                         promise.resolve(values.mapProperty('data'));
                     });
                 });
-            }).then(null, Prevail.Error);
+            }).then(null, Prevail.ErrorLogAndThrow);
         }           
     });
 
@@ -228,7 +235,7 @@
                     var parent = parent_key.slice(0, leftIndex);
                     var key = parent_key.slice(leftIndex + 1, parent_key.length);
                     fn.call(this, parent, key);
-                } catch(e) { Ember.Prevail.Error(e); }
+                } catch(e) { Ember.Prevail.ErrorLogAndThrow(e); }
             });
         },
 
@@ -345,7 +352,7 @@
                 }
 
                 return ob;
-            }).then(null, Prevail.Error);
+            }).then(null, Prevail.ErrorLogAndThrow);
         },
 
         deleteRecord: function(ob) {
@@ -362,7 +369,7 @@
                             Ember.assert("foreign reference is same object", parent.get(key) === ob);
                             parent.set(key, null);
                         })
-                        .then(null, Ember.Prevail.Error);
+                        .then(null, Ember.Prevail.ErrorLogAndThrow);
                 });
                 
                 ob.eachForeignCollection(function(parentId, key) {
@@ -391,7 +398,7 @@
                 }
 
                 return promise;
-            }).then(null, Prevail.Error);
+            }).then(null, Prevail.ErrorLogAndThrow);
         },
 
         find: function(type, id) {
@@ -410,14 +417,14 @@
                 set(coll, 'content', data.objects);
                 
                 return coll;
-            }).then(null, Prevail.Error);
+            }).then(null, Prevail.ErrorLogAndThrow);
         },
 
         clear: function() {
             var store = this;
             return this.get('adapter').clear()
                 .then(function() { store.initialize(); })
-                .then(null, Prevail.Error);
+                .then(null, Prevail.ErrorLogAndThrow);
         },
 
         /*
@@ -434,7 +441,7 @@
                 } else {
                     promise.resolve();
                 }
-            }).then(null, Prevail.Error);
+            }).then(null, Prevail.ErrorLogAndThrow);
         },
 
         initialize: function() {
@@ -455,7 +462,7 @@
                 this.set('data', data);
                 this.endPropertyChanges();
                 promise.resolve();
-            }, this).then(null, Prevail.Error);
+            }, this).then(null, Prevail.ErrorLogAndThrow);
         },
 
         propertySet: function(ob, key, value, oldvalue) {
@@ -634,7 +641,7 @@
                         } else {
                             ob.set(change.key, change.value);
                         }
-                    }).then(null, Prevail.Error);
+                    }).then(null, Prevail.ErrorLogAndThrow);
             } else if (change.changeType === 'slice') {
                 return store.getObject(change.objectId)
                     .then(function(ob) {
@@ -675,12 +682,12 @@
                             });
 
                         return promise;
-                    }).then(null, Prevail.Error);
+                    }).then(null, Prevail.ErrorLogAndThrow);
             } else if (change.changeType === 'delete') {
                 return store.getObject(change.objectId)
                     .then(function(ob) {
                         return store.deleteRecord(ob);
-                    }).then(null, Prevail.Error);
+                    }).then(null, Prevail.ErrorLogAndThrow);
             } else {
                 throw new Exception("Unknown change type:" + change.changeType);
             }
@@ -766,8 +773,8 @@
                 store.mustRememberChanges(true);
             }, function(e) {
                 store.mustRememberChanges(true);
-                Prevail.Error(e);
-            }).then(null, Prevail.Error);
+                Prevail.ErrorLogAndThrow(e);
+            }).then(null, Prevail.ErrorLogAndThrow);
         },
 
         // TODO - this should actually be wrapped up in a context/branch? See playbackChanges to understand.
@@ -794,7 +801,7 @@
                 } else {
                     promise.resolve();
                 }
-            }, this).then(null, Prevail.Error);
+            }, this).then(null, Prevail.ErrorLogAndThrow);
         },
 
         rememberChange: function(change) {
@@ -840,7 +847,7 @@
                     return ob;
                 }
                 return null;
-            }).then(null, Prevail.Error);
+            }).then(null, Prevail.ErrorLogAndThrow);
         }
     });
 })();
