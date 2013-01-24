@@ -1,11 +1,7 @@
-/*global QUnit:false, module:false, test:false, asyncTest:false, expect:false*/
-/*global start:false, stop:false ok:false, equal:false, notEqual:false, deepEqual:false*/
-/*global notDeepEqual:false, strictEqual:false, notStrictEqual:false, raises:false*/
-(function() {
+define('test', ['ember', 'ember-prevail'], function(Ember, Prevail) {
     // namespace for models, so that Type.toString() returns a qualified name.
-    QUnit.config.testTimeout = 4000;
 
-    var resolved = Ember.Prevail.resolved;
+    var resolved = Prevail.resolved;
 
     var complete = function(store) {
         return function() { 
@@ -1184,6 +1180,6 @@
 
     // test('find works with type', 0, function() {});
     // test('schema versioning in changesets, add and remove computed attributes', 0, function() {});
-}());
+});
 
 

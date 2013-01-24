@@ -5,22 +5,28 @@
 // TODO
 // deletions must update related objects
 
-(function() {
+define('ember-prevail', ['ember', 'rsvp','uuid', 'lawnchair'], function(Ember, RSVP, UUIDjs, Lawnchair) {
   var get = Ember.get, set = Ember.set;
 
+  Ember.Prevail = Ember.Namespace.extend();
+        
   var log = function() { console.log.apply(console, arguments); };
 
-  Ember.Prevail = Ember.Namespace.extend();
   var Prevail = Ember.Prevail;
 
   Prevail.logChanges = false;
 
-  Prevail.resolved = Ember.makePromise();
+  Ember.Prevail.makePromise = function() { return new RSVP.Promise(); };
+  Prevail.resolved = Ember.Prevail.makePromise();
   Prevail.resolved.resolve();
 
   var resolved = Prevail.resolved;
 
-  
+  var asyncPromise = function(promise) {
+    return function () {
+      promise.resolve();
+    };
+  };
 
   Prevail.ErrorLogAndThrow = function(e) {
     log(e + '; ' + Ember.inspect(e));
@@ -76,7 +82,7 @@
   };
 
   var withPromise = function(fn, binding) {
-    var promise = Ember.makePromise();
+    var promise = Ember.Prevail.makePromise();
     promise.then(null, Prevail.ErrorLogAndThrow);
     return fn.call(binding, promise) || promise;
   };
@@ -136,7 +142,7 @@
     adapter: 'dom',
 
     init: function() {
-      var promise = Ember.makePromise();
+      var promise = Ember.Prevail.makePromise();
       Lawnchair({adapter: this.get('adapter'), name:this.get('dbName')}, function(store) {
         promise.resolve(store);
       });
@@ -145,11 +151,9 @@
 
     clear: function() {
       return this.get('lawnchair').then(function(store) {
-        return withPromise(function(promise) {
-          store.nuke(function() {
-            promise.resolve();
-          });
-        });
+        var done = Ember.Prevail.makePromise();
+        store.nuke(asyncPromise(done));
+        return done;
       }).then(null, Prevail.ErrorLogAndThrow);
     },
 
@@ -752,7 +756,7 @@
         var sorted = store.sortChangesets(changesets);
         Ember.assert("changesets must be equal", changesets.length === sorted.length);
 
-        var promise = Ember.makePromise();
+        var promise = Ember.Prevail.makePromise();
         promise.resolve();
 
         sorted.forEach(function(changeset) {
@@ -850,4 +854,7 @@
       }).then(null, Prevail.ErrorLogAndThrow);
     }
   });
-})();
+
+  return Ember.Prevail;
+});
+

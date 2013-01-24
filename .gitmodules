@@ -1,0 +1,6 @@
+[submodule "vendor/sweet.js"]
+	path = vendor/sweet.js
+	url = https://github.com/mozilla/sweet.js
+[submodule "vendor/require-sweet"]
+	path = vendor/require-sweet
+	url = https://github.com/iammerrick/require-sweet

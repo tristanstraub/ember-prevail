@@ -1,37 +1,19 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8">
-  <title>Ember-Prevail Test Suite</title>
-  <!-- Load local jQuery. This can be overridden with a ?jquery=___ param. -->
-  <!-- Load local QUnit (grunt requires v1.0.0 or newer). -->
-  <link rel="stylesheet" href="../lib/qunit/qunit.css" media="screen">
-  <script src="../lib/qunit/qunit.js"></script>
-  <!-- Load local lib and tests. -->
-  <script src="../grunt.js"></script>
+  <head>
+    <meta charset="utf-8"/>
+    <title>Ember-Prevail Test Suite</title>
+    <!-- Load local jQuery. This can be overridden with a ?jquery=___ param. -->
+    <!-- Load local QUnit (grunt requires v1.0.0 or newer). -->
+    <link rel="stylesheet" href="../lib/qunit/qunit.css" media="screen"/>
+    <script src="../lib/qunit/qunit.js"></script>
+    <!-- Load local lib and tests. -->
 
-    <script type="text/javascript" src="../lib/jquery-1.8.3.min.js"></script>
-    <script type="text/javascript" src="../lib/handlebars-1.0.rc.1.js"></script>
-    <script type="text/javascript" src="../lib/ember.js"></script>
-    <script type="text/javascript" src="../lib/lawnchair-0.6.1.js"></script>
-    <script type="text/javascript" src="../lib/lawnchair-adapter-indexed-db-0.6.1.js"></script>
-    <script type="text/javascript" src="../lib/uuid.js"></script>
-    <script type="text/javascript" src="../lib/rsvp.js"></script>
-    <script type="text/javascript" src="../src/ember-promise.js"></script>
-    <script type="text/javascript" src="../src/ember-prevail.js"></script>
-
-  <script src="test.js"></script>
-</head>
-<body onload="QUnit.start()">
-  <h1 id="qunit-header">Ember-Prevail Test Suite</h1>
-  <h2 id="qunit-banner"></h2>
-  <div id="qunit-testrunner-toolbar"></div>
-  <h2 id="qunit-userAgent"></h2>
-  <ol id="qunit-tests"></ol>
-  <div id="qunit-fixture">
-    <span>lame test markup</span>
-    <span>normal test markup</span>
-    <span>awesome test markup</span>
-  </div>
-</body>
+    <script type="text/javascript" charset="utf-8" src="../lib/require.js"></script>
+    <script type="text/javascript" charset="utf-8" src="../src/require-config.js"></script>
+    <script type="text/javascript" src="main.js"></script>
+  </head>
+  <body>
+    <div id="qunit"></div>
+  </body>
 </html>
