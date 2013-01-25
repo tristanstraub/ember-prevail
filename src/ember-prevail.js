@@ -81,12 +81,6 @@ define('ember-prevail', ['ember', 'rsvp','uuid', 'lawnchair'], function(Ember, R
     log(Prevail.toObject(Prevail.zip(names, Prevail.slice(values))));
   };
 
-  var withPromise = function(fn, binding) {
-    var promise = Ember.Prevail.makePromise();
-    promise.then(null, Prevail.ErrorLogAndThrow);
-    return fn.call(binding, promise) || promise;
-  };
-
   Prevail.toCollection = function(promise) {
     var array = Ember.ArrayProxy.create({});
     promise.then(function(values) {
@@ -159,21 +153,19 @@ define('ember-prevail', ['ember', 'rsvp','uuid', 'lawnchair'], function(Ember, R
 
     storeChangeSet: function(changeset) {
       return this.get('lawnchair').then(function(store) {
-        return withPromise(function(promise) {
-          store.save({key: changeset.id, data: changeset}, function() {
-            promise.resolve();
-          });
-        });
+        var done = Ember.Prevail.makePromise();
+        store.save({key: changeset.id, data: changeset}, asyncPromise(done));
+        return done;
       }).then(null, Prevail.ErrorLogAndThrow);
     },
 
     getChangeSets: function() {
       return this.get('lawnchair').then(function(store) {
-        return withPromise(function(promise) {
-          store.all(function(values) {
-            promise.resolve(values.mapProperty('data'));
-          });
+        var promise = Ember.Prevail.makePromise();
+        store.all(function(values) {
+          promise.resolve(values.mapProperty('data'));
         });
+        return promise;
       }).then(null, Prevail.ErrorLogAndThrow);
     }           
   });
@@ -437,36 +429,33 @@ define('ember-prevail', ['ember', 'rsvp','uuid', 'lawnchair'], function(Ember, R
 
     ensurePlayedback: function() {
       var store = this;
-      return withPromise(function(promise) {
-        var data = store.get('data');
-        if (!data.played) {
-          data.played = true;
-          return store.playbackChanges();
-        } else {
-          promise.resolve();
-        }
-      }).then(null, Prevail.ErrorLogAndThrow);
+      var data = store.get('data');
+      if (!data.played) {
+        data.played = true;
+        return store.playbackChanges();
+      }
+
+      return Ember.Prevail.resolved;
     },
 
     initialize: function() {
-      return withPromise(function(promise) {
-        // destroy existing items when initialize called twice?
-        var data = {
-          played: false,
-          objects: Ember.Set.create(),
-          objectsIndex: {},
-          changes: [],
-          previousChangesetId: null
-        };
+      // destroy existing items when initialize called twice?
+      var data = {
+        played: false,
+        objects: Ember.Set.create(),
+        objectsIndex: {},
+        changes: [],
+        previousChangesetId: null
+      };
 
-        this.beginPropertyChanges();
-        if (this.get('adapter').create) {
-          this.set('adapter', this.get('adapter').create());
-        }
-        this.set('data', data);
-        this.endPropertyChanges();
-        promise.resolve();
-      }, this).then(null, Prevail.ErrorLogAndThrow);
+      this.beginPropertyChanges();
+      if (this.get('adapter').create) {
+        this.set('adapter', this.get('adapter').create());
+      }
+      this.set('data', data);
+      this.endPropertyChanges();
+
+      return Ember.Prevail.resolved;
     },
 
     propertySet: function(ob, key, value, oldvalue) {
@@ -787,25 +776,23 @@ define('ember-prevail', ['ember', 'rsvp','uuid', 'lawnchair'], function(Ember, R
     },
 
     flushChanges: function() {
-      return withPromise(function(promise) {
-        var data = this.get('data');
-        if (data.changes.length > 0) {
-          var changeset = {
-            id: Prevail.newId(),
-            previousChangesetIds: data.previousChangesetId && [data.previousChangesetId],
-            // this should be windowed for when storeChangeSet fails
-            changes: data.changes
-          };
+      var data = this.get('data');
+      if (data.changes.length > 0) {
+        var changeset = {
+          id: Prevail.newId(),
+          previousChangesetIds: data.previousChangesetId && [data.previousChangesetId],
+          // this should be windowed for when storeChangeSet fails
+          changes: data.changes
+        };
 
-          data.previousChangesetId = changeset.id;
-          data.changes = [];
-          this.notifyPropertyChange('data');
+        data.previousChangesetId = changeset.id;
+        data.changes = [];
+        this.notifyPropertyChange('data');
 
-          return this.get('adapter').storeChangeSet(changeset);
-        } else {
-          promise.resolve();
-        }
-      }, this).then(null, Prevail.ErrorLogAndThrow);
+        return this.get('adapter').storeChangeSet(changeset);
+      } 
+
+      return Ember.Prevail.resolved;
     },
 
     rememberChange: function(change) {
