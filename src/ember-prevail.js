@@ -634,6 +634,8 @@ define('ember-prevail', ['ember', 'rsvp','uuid', 'lawnchair'], function(Ember, R
             } else {
               ob.set(change.key, change.value);
             }
+
+            return null;
           }).then(null, Prevail.ErrorLogAndThrow);
       } else if (change.changeType === 'slice') {
         return store.getObject(change.objectId)
