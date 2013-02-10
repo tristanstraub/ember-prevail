@@ -8,7 +8,7 @@ module.exports = function(grunt) {
 
     meta: {
       banner: '/*! <%=pkg.name%> - v<%=pkg.version%> (build <%=pkg.build%>) - '+
-             '<%=grunt.template.today("dddd, mmmm dS, yyyy, h:MM:ss TT")%> */',
+             '<%=grunt.template.today("dddd, mmmm dS, yyyy, h:MM:ss TT")%> */'
     },
 
     concat: {
@@ -19,17 +19,17 @@ module.exports = function(grunt) {
     },
 
     qunit: {
-	files: ['../../tests/**/*.html']
+	files: ['tests/**/*.html']
     },
 
     lint: {
-	files: ['../../src/**/*.js', '../../tests/**/*.js']
+	files: ['src/**/*.js', 'tests/**/*.js']
     },
 
     dirs: {
       src: root+'/src',
       plugins: root+'/lib/plugins',
-      dest: '../../dist/<%=pkg.project%>'
+      dest: 'dist/<%=pkg.project%>'
     }
   });
 
